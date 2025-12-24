@@ -1,0 +1,41 @@
+services:
+  # --- Base de Datos (PostgreSQL) ---
+  db:
+    image: postgres:15-alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+
+  # --- Backend (FastAPI) ---
+  backend:
+    build: ./backend
+    container_name: inventory_backend
+    volumes:
+      - ./backend:/app # Hot-Reload: Los cambios en tu carpeta local se reflejan en el container
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  # --- Frontend (React + Vite) ---
+  frontend:
+    build: ./frontend
+    container_name: inventory_frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Evita sobrescribir node_modules del contenedor con el local vacío
+    ports:
+      - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Necesario para hot-reload en algunos sistemas (Windows/WSL)
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
