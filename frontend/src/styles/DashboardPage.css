@@ -1,0 +1,212 @@
+/* src/styles/DashboardPage.css */
+
+:root {
+  --bg-main: #121212;
+  --bg-card: #1e1e1e;
+  --bg-card-soft: #252525;
+  --border: #333;
+  --text-main: #e0e0e0;
+  --text-muted: #aaaaaa;
+  --green: #2e7d32;
+  --green-hover: #1b5e20;
+  --red: #c62828;
+  --red-hover: #b71c1c;
+  --accent: #3a3a3a;
+  --accent-hover: #4a4a4a;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== HEADER ===== */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  margin-bottom: 3rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #fff, #aaa);
+  background-clip: text; 
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Botón Cerrar Sesión */
+.btn-logout {
+  background: rgba(198, 40, 40, 0.1);
+  color: #ff8a80;
+  border: 1px solid rgba(198, 40, 40, 0.3);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  white-space: nowrap; /* Evita que el texto se rompa feo */
+}
+
+.btn-logout:hover {
+  background: var(--red);
+  color: white;
+  box-shadow: 0 0 15px rgba(198, 40, 40, 0.4);
+  transform: translateY(-2px);
+}
+
+/* ===== GRID DE TARJETAS ===== */
+.dashboard-grid {
+  display: grid;
+  /* Ajusté minmax a 280px para que quepa mejor en teléfonos medianos */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+/* ===== DISEÑO DE LA TARJETA ===== */
+.menu-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--text-muted);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Icono Grande */
+.card-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  background: var(--bg-card-soft);
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+}
+
+.menu-card h3 {
+  margin: 10px 0;
+  font-size: 1.4rem;
+  color: white;
+}
+
+.menu-card p {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* ===== BOTONES DE TARJETA ===== */
+.btn-card {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg-card-soft);
+  color: white;
+  border: 1px solid var(--border);
+}
+
+.btn-card:hover {
+  background: var(--text-main);
+  color: black;
+  transform: scale(1.02);
+}
+
+.btn-primary {
+  background: var(--green);
+  border: none;
+}
+.btn-primary:hover {
+  background: var(--green-hover);
+  color: white;
+  box-shadow: 0 0 15px rgba(46, 125, 50, 0.4);
+}
+
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   RESPONSIVE (MEDIA QUERIES) - ¡NUEVO!
+   ========================================= */
+
+/* Tablets y Móviles (< 768px) */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem; /* Menos relleno lateral */
+  }
+
+  .dashboard-header {
+    flex-direction: column; /* Apilar elementos */
+    gap: 15px; /* Espacio entre título y botón */
+    text-align: center;
+    padding: 1.5rem 1rem;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.5rem; /* Título un poco más pequeño */
+  }
+
+  .btn-logout {
+    width: 100%; /* Botón ancho para fácil acceso táctil */
+    display: flex;
+    justify-content: center;
+  }
+}
+
+/* Móviles Pequeños (< 480px) */
+@media (max-width: 480px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr; /* Una sola columna obligatoria */
+    gap: 1.5rem;
+  }
+
+  .menu-card {
+    padding: 1.5rem;
+  }
+
+  .card-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem; /* Icono un poco más chico */
+  }
+}

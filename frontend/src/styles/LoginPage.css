@@ -1,0 +1,209 @@
+/* src/styles/LoginPage.css */
+
+:root {
+  --bg-main: #121212;
+  --bg-card: #1e1e1e;
+  --bg-input: #252525;
+  --border: #333;
+  --text-main: #e0e0e0;
+  --text-muted: #aaaaaa;
+  --green: #2e7d32;
+  --green-hover: #1b5e20;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--bg-main);
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* === TARJETA PRINCIPAL (La estructura del boceto) === */
+.login-card {
+  display: flex; /* Diseño de dos columnas */
+  width: 100%;
+  max-width: 900px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden; /* Para que la imagen no se salga de las esquinas */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  height: 620px;
+}
+
+/* === LADO IZQUIERDO (Visual/Decorativo) === */
+.login-visual {
+  flex: 1;
+  background: linear-gradient(135deg, var(--bg-input) 0%, #0d2b10 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+}
+
+.visual-icon {
+  font-size: 5rem;
+  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.login-visual h2 {
+  color: white;
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.login-visual p {
+  color: var(--text-muted);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+/* === LADO DERECHO (Formulario) === */
+.login-form-section {
+  flex: 1;
+  padding: 30px; /* Antes era 50px */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.login-form-section h1 {
+  color: var(--text-main);
+  margin-bottom: 15px; /* Antes era 30px */
+  margin-top: 0;       /* Aseguramos que no tenga margen extra arriba */
+  font-size: 1.8rem;
+  text-align: center;
+}
+
+/* Inputs idénticos a los del inventario */
+.form-group {
+  margin-bottom: 10px;
+}
+
+input {
+  width: 100%;
+  padding: 10px; /* Reducido de 12px a 10px (Esto ahorra mucho espacio x6 inputs) */
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  height: 40px; /* Forzamos una altura controlada */
+}
+
+input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.2);
+}
+
+/* Botón Principal */
+.btn-login {
+  width: 100%;
+  padding: 12px;
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 5px;
+}
+
+.btn-login:hover {
+  background: var(--green-hover);
+}
+
+.btn-login:active {
+  transform: scale(0.98);
+}
+
+/* Texto de Toggle (Cambiar entre Login/Registro) */
+.toggle-text {
+  text-align: center;
+  margin-top: 10px; /* Antes era 25px */
+  color: var(--text-muted);
+  font-size: 0.85em;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: var(--green);
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-left: 5px;
+  text-decoration: underline;
+}
+
+.toggle-btn:hover {
+  color: #4caf50;
+}
+
+.form-error-msg {
+  color: #ef5350;
+  background: rgba(239, 83, 80, 0.1);
+  padding: 8px; /* Reducido de 10px a 8px */
+  border-radius: 6px;
+  text-align: center;
+  margin-bottom: 12px; /* Reducido de 15px a 12px */
+  font-size: 0.85rem; /* Letra un poco más pequeña */
+  border: 1px solid rgba(239, 83, 80, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+/* Animación de vibración para llamar la atención */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  .login-card {
+    flex-direction: column;
+    height: auto; /* En celular sí dejamos que crezca libremente */
+    min-height: 100vh; /* Opcional: para que ocupe toda la pantalla en móvil */
+  }
+  
+  .login-visual {
+    padding: 30px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    flex: 0 0 auto; /* Que ocupe solo lo necesario */
+  }
+
+  .login-visual h2 { font-size: 1.5rem; }
+  
+  .login-form-section {
+    padding: 30px;
+  }
+}

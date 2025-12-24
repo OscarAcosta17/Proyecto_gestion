@@ -1,4 +1,6 @@
-# Logs
+# ==========================================
+#              LOGS & SISTEMA
+# ==========================================
 logs
 *.log
 npm-debug.log*
@@ -6,17 +8,60 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+.DS_Store
+Thumbs.db
 
+# ==========================================
+#          FRONTEND (NODE/REACT)
+# ==========================================
 node_modules
 dist
 dist-ssr
 *.local
 
-# Editor directories and files
+# ==========================================
+#          BACKEND (PYTHON) - ¡NUEVO!
+# ==========================================
+# Archivos compilados que genera Python automáticamente
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales (donde se instalan las librerías)
+venv/
+.venv/
+env/
+.env/
+
+# ==========================================
+#          SEGURIDAD (¡CRÍTICO!)
+# ==========================================
+# Archivos con contraseñas y claves de API
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Claves privadas
+*.pem
+*.key
+
+# ==========================================
+#          BASE DE DATOS
+# ==========================================
+# Archivos de BD locales (SQLite) para que no subas tus datos de prueba
+*.sqlite
+*.sqlite3
+*.db
+backend/*.db
+
+# ==========================================
+#          IDE / EDITOR
+# ==========================================
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj

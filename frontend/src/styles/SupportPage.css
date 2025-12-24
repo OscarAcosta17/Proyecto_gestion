@@ -1,0 +1,202 @@
+/* src/styles/SupportPage.css */
+
+:root {
+  --bg-main: #121212;
+  --bg-card: #1e1e1e;
+  --bg-card-soft: #252525;
+  --border: #333;
+  --text-main: #e0e0e0;
+  --text-muted: #aaaaaa;
+  --green: #2e7d32;
+  --green-hover: #1b5e20;
+  --red: #c62828; /* Variable para errores */
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, sans-serif;
+  margin: 0; /* Reset básico */
+}
+
+.support-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* HEADER */
+.support-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border);
+}
+
+.support-header h1 { 
+  margin: 0; 
+  font-size: 1.5rem; 
+}
+
+.btn-back {
+  background: var(--bg-card-soft);
+  color: white;
+  border: 1px solid var(--border);
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+.btn-back:hover { background: var(--border); }
+
+/* FORM CARD */
+.support-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 2.5rem; /* Espacio cómodo en escritorio */
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.form-group { margin-bottom: 1.5rem; }
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-card-soft);
+  border: 1px solid var(--border);
+  color: white;
+  border-radius: 6px;
+  outline: none;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+  box-sizing: border-box; /* Importante para que el padding no rompa el ancho */
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #fff;
+  background-color: #2a2a2a;
+  box-shadow: 0 0 15px 1px rgba(255, 255, 255, 0.15);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 14px;
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+
+.btn-submit:hover {
+  background: var(--green-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.4);
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ERRORES */
+.error-message {
+  color: #ef5350; /* Rojo claro legible sobre fondo oscuro */
+  font-size: 0.85rem;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.input-error {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 8px rgba(198, 40, 40, 0.4) !important;
+}
+
+/* =========================================
+   RESPONSIVE (MEDIA QUERIES)
+   ========================================= */
+
+/* Tablets y Celulares grandes (< 768px) */
+@media (max-width: 768px) {
+  .support-container {
+    padding: 1rem; /* Menos relleno en los bordes de la pantalla */
+    max-width: 100%;
+  }
+
+  .support-header {
+    flex-direction: column; /* Apilar título y botón */
+    gap: 15px;
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .btn-back {
+    width: 100%; /* Botón ancho para dedos táctiles */
+    padding: 10px;
+  }
+
+  .support-card {
+    padding: 1.5rem; /* Reducir padding interno de la tarjeta */
+  }
+
+  .support-card h2 {
+    font-size: 1.1rem; /* Título un poco más pequeño */
+  }
+}
+
+/* Celulares pequeños (< 480px) */
+@media (max-width: 480px) {
+  .support-container {
+    padding: 0.5rem; /* Aprovechar al máximo el ancho */
+  }
+
+  .support-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .support-card {
+    padding: 1.2rem;
+    border-radius: 8px;
+  }
+
+  input, select, textarea {
+    font-size: 16px; /* Evita que el iPhone haga zoom al escribir */
+  }
+}

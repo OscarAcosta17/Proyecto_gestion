@@ -1,0 +1,317 @@
+/* src/styles/InventoryPage.css */
+
+:root {
+  --bg-main: #121212;
+  --bg-card: #1e1e1e;
+  --bg-card-soft: #252525;
+  --border: #333;
+  --text-main: #e0e0e0;
+  --text-muted: #aaaaaa;
+  --green: #2e7d32;
+  --green-hover: #1b5e20;
+  --red: #c62828;
+  --red-hover: #b71c1c;
+  --accent: #3a3a3a;
+  --accent-hover: #4a4a4a;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-main);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+.app {
+  width: 100%;
+  max-width: 100%;
+  padding: 1.5rem 2rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== HEADER ===== */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* Botón Volver con Hover Rojo */
+.header button {
+  background: var(--bg-card-soft);
+  color: white;
+  border: 1px solid var(--border);
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.header button:hover {
+  background: var(--red); /* <--- ROJO AL PASAR EL MOUSE */
+  border-color: var(--red-hover);
+  box-shadow: 0 0 8px rgba(198, 40, 40, 0.4);
+}
+
+/* ===== GRID PRINCIPAL ===== */
+.grid {
+  display: grid;
+  grid-template-columns: 350px 1fr; 
+  gap: 2rem; 
+  align-items: stretch;
+  width: 100%;
+}
+
+/* ===== COLUMNAS ===== */
+.left-column {
+  display: flex;
+  flex-direction: column;
+  /* AUMENTADO: Mayor separación entre bloques */
+  gap: 4rem; 
+}
+
+.right-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  transition: border-color 0.2s;
+}
+
+.card:hover { border-color: #555; }
+
+.right-column .card {
+  flex-grow: 1; 
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title {
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fff;
+}
+
+/* ===== FORMULARIOS ===== */
+form { animation: slideIn 0.3s ease-out; }
+
+/* ===== INPUTS & BOTONES ===== */
+input {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-card-soft);
+  border: 1px solid var(--border);
+  color: white;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  outline: none;
+  font-size: 0.95rem;
+  /* Transición suave para el efecto de luz */
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* EFECTO LUMINOSO AL ESCRIBIR */
+input:focus {
+  border-color: #fff; /* Borde blanco puro */
+  background-color: #2a2a2a;
+  /* Glow blanco intenso y difuminado hacia afuera */
+  box-shadow: 0 0 15px 2px rgba(255, 255, 255, 0.3); 
+  transform: scale(1.02); /* Se agranda un pelín para destacar */
+}
+
+input::placeholder {
+  color: #666;
+}
+
+input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none; /* Sin brillo si está deshabilitado */
+}
+button {
+  border: none; border-radius: 6px; padding: 12px; cursor: pointer;
+  font-weight: 600; font-size: 0.95rem; transition: opacity 0.2s, transform 0.1s;
+}
+button:active { transform: scale(0.98); }
+button:hover { opacity: 0.9; }
+
+.btn { background: var(--accent); color: white; width: 100%; }
+.btn-green { background: var(--green); color: white; width: 100%; }
+.btn-red { background: var(--red); color: white; width: 100%; }
+
+/* ===== TABLA ===== */
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+  flex-grow: 1; 
+}
+
+table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+table th {
+  text-align: left; padding: 14px; border-bottom: 1px solid var(--border);
+  color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;
+  letter-spacing: 0.5px; font-weight: 600; background: var(--bg-card);
+}
+table td {
+  padding: 14px; border-bottom: 1px solid #2a2a2a; color: var(--text-main);
+  font-size: 0.95rem; vertical-align: middle;
+}
+table tr:last-child td { border-bottom: none; }
+table tr:hover { background-color: rgba(255,255,255,0.03); }
+
+.muted { color: var(--text-muted); font-size: 0.85rem; }
+
+/* ===== DROPDOWN ===== */
+/* src/styles/InventoryPage.css */
+
+/* ... (tus estilos anteriores) ... */
+
+/* === MENÚ DESPLEGABLE (EXPORTAR) === */
+.dropdown-menu {
+  position: absolute;
+  top: 110%; /* Un poquito separado del botón */
+  right: 0;
+  background: var(--bg-card); /* Fondo oscuro #1e1e1e */
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.5); /* Sombra fuerte para resaltar */
+  overflow: hidden;
+  z-index: 100;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.dropdown-menu button {
+  background: transparent;
+  border: none;
+  color: var(--text-main); /* <--- ¡ESTO ARREGLA EL TEXTO NEGRO! (Lo pone blanco/gris) */
+  padding: 12px 15px;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Espacio entre icono y texto */
+}
+
+.dropdown-menu button:hover {
+  background: var(--bg-card-soft); /* Efecto al pasar el mouse */
+  color: white;
+  padding-left: 20px; /* Pequeña animación de desplazamiento */
+}
+.dropdown-menu button:last-child { border-bottom: none; }
+
+/* ===== FEEDBACK ===== */
+.feedback {
+  padding: 12px; border-radius: 6px; margin-bottom: 20px;
+  text-align: center; font-weight: 600; animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.feedback.in { background: var(--green); color: white; }
+.feedback.out { background: var(--red); color: white; }
+
+.footer {
+  margin-top: auto; padding-top: 2rem; text-align: center;
+  color: var(--text-muted); font-size: 0.8rem;
+}
+/* === SELECTOR DE MODO DE STOCK === */
+.stock-mode-selector {
+  display: flex;
+  background: var(--bg-card-soft);
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 15px;
+  border: 1px solid var(--border);
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.mode-btn.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* === INPUTS DE CAJA === */
+.box-inputs-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.box-separator {
+  color: var(--text-muted);
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.calculated-stock {
+  text-align: center;
+  color: var(--green);
+  font-weight: bold;
+  margin-top: 5px;
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+}
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .app { padding: 15px; }
+  .grid { grid-template-columns: 1fr; gap: 1.5rem; }
+  .left-column { gap: 1.5rem; }
+  .right-column .card { min-height: 400px; }
+  .table-container { display: block; width: 100%; overflow-x: auto; }
+}

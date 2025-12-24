@@ -1,24 +1,23 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/LoginPage'; // Ojo: si usas "export default", va sin llaves {}
 
-// ... tu dashboard ...
-// Agrega esto en App.tsx para que no falle la ruta /dashboard
-const Dashboard = () => {
-  return <h2>Bienvenido al Dashboard (Vista Protegida)</h2>;
-};
+// Importa tus páginas
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import InventoryPage from './pages/InventoryPage';
+import SupportPage from './pages/SupportPage'; // <--- NUEVA PÁGINA
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Ahora esta única ruta maneja Login Y Registro */}
-        <Route path="/login" element={<LoginPage />} />
-        
-        {/* Redirigir la raíz al login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         
-        {/* Tu ruta protegida */}
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/inventory" element={<InventoryPage />} />
+        
+        {/* Agrega esta línea */}
+        <Route path="/support" element={<SupportPage />} />
       </Routes>
     </BrowserRouter>
   );
