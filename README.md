@@ -46,20 +46,6 @@ Este proyecto utiliza una arquitectura de microservicios contenerizada.
 
 ---
 
-## 📸 Capturas de Pantalla
-
-| Login / Registro | Dashboard |
-|:---:|:---:|
-| <img src="./screenshots/login.png" width="400"> | <img src="./screenshots/dashboard.png" width="400"> |
-
-| Gestión de Inventario | Modal de Stock |
-|:---:|:---:|
-| <img src="./screenshots/inventory.png" width="400"> | <img src="./screenshots/stock-modal.png" width="400"> |
-
-> *Nota: Las imágenes se encuentran en la carpeta `screenshots`.*
-
----
-
 ## 🔧 Instalación y Despliegue
 
 ### Prerrequisitos

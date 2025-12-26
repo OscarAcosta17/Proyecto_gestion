@@ -1,43 +1,148 @@
 import { useEffect, useRef } from "react";
-import { BrowserMultiFormatReader } from "@zxing/browser";
+import {
+  BrowserMultiFormatReader,
+  BarcodeFormat,
+  DecodeHintType,
+} from "@zxing/library";
 
 interface ScannerProps {
   onScan: (code: string) => void;
   active: boolean;
+
+  // nuevos: para probar
+  width?: number;
+  height?: number;
+  fps?: number;
 }
 
-export default function BarcodeScanner({ onScan, active }: ScannerProps) {
+export default function BarcodeScanner({
+  onScan,
+  active,
+  width = 1920,
+  height = 1080,
+  fps = 20,
+}: ScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const controlsRef = useRef<any>(null); // Usamos any para evitar líos de tipos
+  const codeReader = useRef<BrowserMultiFormatReader | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const lockRef = useRef(false);
 
   useEffect(() => {
     if (!active) return;
 
-    const reader = new BrowserMultiFormatReader();
-    
-    // INICIAR CÁMARA
-    // CORRECCIÓN: Agregamos ': any' a result y err para quitar las líneas rojas
-    reader.decodeFromVideoDevice(undefined, videoRef.current!, (result: any, _err: any, _controls: any) => {
-      if (result) {
-        const code = result.getText();
-        // Detener al encontrar algo
-        controlsRef.current?.stop(); 
-        onScan(code);
+    // 1) Hints: solo códigos de producto
+    const hints = new Map();
+    const formats = [
+      BarcodeFormat.EAN_13,
+      BarcodeFormat.EAN_8,
+      BarcodeFormat.CODE_128,
+      BarcodeFormat.UPC_A,
+    ];
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
+
+    const reader = new BrowserMultiFormatReader(hints);
+    codeReader.current = reader;
+    lockRef.current = false;
+
+    let cancelled = false;
+
+    async function start() {
+      try {
+        // 2) Selección de cámara trasera (como ya hacías)
+        const videoInputDevices = await reader.listVideoInputDevices();
+
+        const backCamera = videoInputDevices.find((device) => {
+          const label = (device.label || "").toLowerCase();
+          return (
+            label.includes("back") ||
+            label.includes("environment") ||
+            label.includes("trasera")
+          );
+        });
+
+        const selectedDeviceId = backCamera
+          ? backCamera.deviceId
+          : videoInputDevices[0]?.deviceId;
+
+        if (!selectedDeviceId) throw new Error("No se encontraron cámaras");
+
+        // 3) ABRIR STREAM con constraints (AQUÍ cambias FPS/resolución)
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            deviceId: { exact: selectedDeviceId },
+            width: { ideal: width },
+            height: { ideal: height },
+            frameRate: { ideal: fps, max: fps },
+          },
+          audio: false,
+        });
+
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+
+        // 4) Reproducir video
+        const videoEl = videoRef.current!;
+        videoEl.srcObject = stream;
+        await videoEl.play();
+
+        // (Opcional) ver qué te dio realmente el dispositivo
+        // console.log(stream.getVideoTracks()[0].getSettings());
+
+        // 5) ZXing decodifica DESDE el stream (NO desde deviceId)
+        reader.decodeFromStream(stream, videoEl, (result, _err) => {
+          if (!result) return;
+          if (lockRef.current) return;
+
+          lockRef.current = true;
+
+          const code = result.getText();
+          if (navigator.vibrate) navigator.vibrate(200);
+
+          // detener para evitar doble lectura y apagar cámara
+          reader.reset();
+          stream.getTracks().forEach((t) => t.stop());
+          videoEl.srcObject = null;
+
+          onScan(code);
+        });
+      } catch (err) {
+        console.error("Error al iniciar cámara:", err);
       }
-    })
-    .then((controls: any) => {
-      controlsRef.current = controls;
-    })
-    .catch((err: any) => console.error("Error cámara:", err));
+    }
+
+    start();
 
     return () => {
-      controlsRef.current?.stop();
+      cancelled = true;
+      reader.reset();
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+
+      if (videoRef.current) videoRef.current.srcObject = null;
     };
-  }, [active, onScan]);
+  }, [active, onScan, width, height, fps]);
 
   return (
-    <div style={{ width: '100%', overflow: 'hidden', background: 'black', borderRadius: '8px', display: active ? 'block' : 'none' }}>
-      <video ref={videoRef} style={{ width: '100%', height: '300px', objectFit: 'cover' }} />
+    <div
+      style={{
+        width: "100%",
+        overflow: "hidden",
+        background: "black",
+        borderRadius: "8px",
+        display: active ? "block" : "none",
+      }}
+    >
+      <video
+        ref={videoRef}
+        style={{ width: "100%", height: "300px", objectFit: "cover" }}
+        muted
+        autoPlay
+        playsInline
+      />
     </div>
   );
 }

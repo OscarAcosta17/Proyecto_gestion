@@ -1,0 +1,145 @@
+/* Contenedor principal que respeta el tamaño */
+.config-main-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    height: 100vh; /* Fallback */
+    height: 100dvh; /* Mejor para móviles (dynamic viewport height) */
+    display: flex;
+    flex-direction: column;
+}
+
+/* El recuadro superior igual al Dashboard */
+.config-header-box {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-shrink: 0; /* Evita que el encabezado se aplaste si falta espacio */
+}
+
+.config-header-box h1 {
+    font-size: 1.5rem;
+    color: #fff;
+    margin: 0;
+}
+
+/* Contenedor de acordeones con scroll interno para no mover la página */
+.config-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    /* Scrollbar más estilizada para webkit (Chrome, Safari) */
+    scrollbar-width: thin;
+    scrollbar-color: #444 #1e1e1e;
+}
+
+/* Estilo de los menús desplegables */
+.config-accordion-item {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.config-accordion-trigger {
+    width: 100%;
+    padding: 20px;
+    background: none;
+    border: none;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* Alinea el texto y la flecha verticalmente */
+    font-weight: bold;
+    cursor: pointer;
+    text-align: left; /* Asegura alineación en móviles */
+    font-size: 1rem;
+}
+
+.config-accordion-content {
+    padding: 0 20px 20px 20px;
+    animation: fadeInScale 0.3s ease-out;
+}
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Inputs que imitan tu diseño de Login */
+.config-input-field {
+    background: #252525;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 12px;
+    color: #fff;
+    width: 100%;
+    margin-top: 5px;
+    font-size: 16px; /* Evita zoom automático en iPhone al escribir */
+}
+
+/* Estilo base del botón volver */
+.btn-volver {
+    background-color: transparent;
+    border: 1px solid #666;
+    color: #ccc;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap; /* Evita que el texto del botón se parta en dos líneas */
+}
+
+.btn-volver:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+
+/* =========================================
+   --- RESPONSIVE (MÓVIL Y TABLET) --- 
+   ========================================= */
+
+@media (max-width: 768px) {
+    /* Reducimos el padding general para ganar espacio en pantallas chicas */
+    .config-main-container {
+        padding: 10px;
+    }
+
+    /* Ajustes del encabezado */
+    .config-header-box {
+        padding: 12px 15px; /* Menos relleno interno */
+        margin-bottom: 15px; /* Menos separación con el contenido */
+    }
+
+    .config-header-box h1 {
+        font-size: 1.2rem; /* Título un poco más pequeño */
+    }
+
+    /* Botón volver más compacto */
+    .btn-volver {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+
+    /* Acordeones */
+    .config-accordion-trigger {
+        padding: 15px; /* Botones más fáciles de tocar pero menos altos */
+    }
+
+    .config-accordion-content {
+        padding: 0 15px 15px 15px;
+    }
+
+    /* Inputs y etiquetas */
+    .config-input-field {
+        margin-top: 8px; /* Un poco más de aire entre label e input */
+    }
+}

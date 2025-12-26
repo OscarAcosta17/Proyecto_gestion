@@ -4,7 +4,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import InventoryPage from './pages/InventoryPage';
-import SupportPage from './pages/SupportPage'; // <--- NUEVA PÁGINA
+import SupportPage from './pages/SupportPage';
+import ConfigurationPage from './pages/ConfigurationPage';
+import StatsPage from './pages/StatsPage';
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
         
         {/* Agrega esta línea */}
         <Route path="/support" element={<SupportPage />} />
+        <Route path="/configuration" element={<ConfigurationPage />} />
+        <Route path="/stats" element={<StatsPage />} />
       </Routes>
     </BrowserRouter>
   );

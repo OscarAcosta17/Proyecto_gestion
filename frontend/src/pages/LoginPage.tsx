@@ -70,7 +70,7 @@ const LoginPage = () => {
       return; // Si falla, no hacemos el fetch
     }
 
-    const backendUrl = 'http://localhost:8000'; 
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
     const endpoint = isLogin ? '/login' : '/register';
     
     const bodyData = isLogin 
@@ -94,6 +94,7 @@ const LoginPage = () => {
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('userEmail', formData.email); 
         localStorage.setItem('userId', data.user_id);
+        localStorage.setItem('first_name', data.first_name || '');
         if(data.first_name) localStorage.setItem('userName', data.first_name);
         navigate('/dashboard');
       } else {

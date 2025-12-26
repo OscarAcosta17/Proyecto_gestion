@@ -1,5 +1,5 @@
 services:
-  # --- Base de Datos (PostgreSQL) ---
+  # --- Base de Datos ---
   db:
     image: postgres:15-alpine
     restart: always
@@ -9,19 +9,25 @@ services:
       - .env
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d inventory_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # --- Backend (FastAPI) ---
   backend:
     build: ./backend
     container_name: inventory_backend
     volumes:
-      - ./backend:/app # Hot-Reload: Los cambios en tu carpeta local se reflejan en el container
+      - ./backend:/app
     ports:
-      - "8000:8000"
+      - "0.0.0.0:8000:8000" # <--- CAMBIO REAL: Escucha en todas las IPs de la red
     env_file:
       - .env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   # --- Frontend (React + Vite) ---
   frontend:
@@ -29,11 +35,11 @@ services:
     container_name: inventory_frontend
     volumes:
       - ./frontend:/app
-      - /app/node_modules # Evita sobrescribir node_modules del contenedor con el local vacío
+      - /app/node_modules
     ports:
-      - "5173:5173"
+      - "0.0.0.0:5173:5173" # <--- CAMBIO REAL: Abre el puerto al celular
     environment:
-      - CHOKIDAR_USEPOLLING=true # Necesario para hot-reload en algunos sistemas (Windows/WSL)
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
 
