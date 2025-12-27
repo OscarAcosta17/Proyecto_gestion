@@ -255,3 +255,145 @@
   .table-header-actions { flex-direction: column; align-items: flex-start; }
   .btn-excel { width: 100%; justify-content: center; }
 }
+
+/* =========================================================
+   MEDIA QUERY: RESPONSIVE MÓVIL (StatsPage)
+   Agrega esto al final de tu archivo CSS
+   ========================================================= */
+
+@media (max-width: 900px) {
+  
+  /* 1. Ajuste del Contenedor Principal */
+  .stats-container {
+    padding: 10px; /* Menos padding para ganar espacio */
+    overflow-x: hidden; /* Evita el scroll horizontal de toda la página */
+  }
+
+  /* 2. Header: Título arriba, botón abajo */
+  .stats-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    gap: 15px;
+    padding: 15px;
+  }
+  .stats-header h1 { font-size: 1.4rem; }
+  .btn-secondary { width: 100%; }
+
+  /* 3. KPI GRID: 2 COLUMNAS (Lo que pediste) */
+  /* Forzamos 2 columnas incluso en pantallas chicas */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  /* Ajuste de las tarjetas para que quepan en 2 columnas */
+  .kpi-card {
+    padding: 12px;
+    min-height: 100px;
+  }
+  
+  .kpi-card h3 { 
+    font-size: 0.65rem; /* Texto más pequeño */
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; /* Puntos suspensivos si es muy largo */
+  }
+  
+  .kpi-card .number { 
+    font-size: 1.1rem; /* Número ajustado */
+    margin: 5px 0; 
+    word-break: break-all;
+  }
+  
+  .kpi-card small { 
+    font-size: 0.65rem; 
+    line-height: 1.1; 
+  }
+
+  /* 4. TABS Y CONTENIDO */
+  .tabs-header { 
+    margin-bottom: -1px; 
+    overflow-x: auto; /* Scroll si hay muchos tabs */
+  }
+  .tab-btn { 
+    padding: 10px 15px; 
+    font-size: 0.85rem; 
+    flex: 1; 
+    text-align: center; 
+  }
+  
+  .tab-content { 
+    padding: 15px 10px; /* Menos padding lateral */
+    border-radius: 0 0 8px 8px; 
+  }
+
+  /* 5. DASHBOARD INTERNO (Ranking y Tabla) */
+  /* Importante: Apilar uno debajo del otro */
+  .sales-dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Ranking */
+  .top-products-card { 
+    padding: 15px; 
+    width: 100%;
+  }
+  
+  /* Filtros de Historial (Scroll horizontal si no caben) */
+  .filter-buttons {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    max-width: 100%;
+    margin-bottom: 15px;
+  }
+  .filter-btn { 
+    white-space: nowrap; 
+    padding: 6px 12px; 
+    font-size: 0.8rem; 
+  }
+
+  /* Contenedor de la Tabla (Evita que se salga) */
+  .history-container {
+    width: 100%;
+    overflow: hidden; /* Contiene los hijos */
+  }
+
+  .table-header-actions { 
+    flex-direction: column; 
+    align-items: stretch; 
+    gap: 10px; 
+  }
+  
+  .btn-excel { 
+    width: 100%; 
+    justify-content: center; 
+  }
+
+  /* Tabla con Scroll Interno */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto; /* Scroll solo en la tabla */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Gráfico */
+  .chart-container {
+    height: 250px; /* Menos altura en móvil */
+    padding: 10px;
+  }
+}
+
+/* Evitar “saltos” de layout por barras de scroll en tabs/filtros (solo UX móvil) */
+@media (hover: none) and (pointer: coarse) {
+  .tabs-header::-webkit-scrollbar,
+  .filter-buttons::-webkit-scrollbar,
+  .table-responsive::-webkit-scrollbar {
+    height: 8px;
+  }
+}

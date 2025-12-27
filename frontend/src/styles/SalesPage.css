@@ -347,7 +347,97 @@
   .ticket-actions, .no-print { display: none; }
 }
 
+/* --- RESPONSIVE MOBILE/TABLET --- */
 @media (max-width: 900px) {
-  .sales-container { flex-direction: column; overflow-y: auto; }
-  .cart-section { width: 100%; min-height: 400px; order: -1; }
+  /* 1. Contenedor Principal: Columna vertical */
+  .sales-container {
+    flex-direction: column;
+    height: 100vh; /* Mantiene la altura fija de la pantalla */
+  }
+
+  /* 2. Sección Carrito (Se va arriba pero limitado) */
+  .cart-section {
+    width: 100%;
+    order: -1; /* Poner visualmente primero */
+    height: 35vh; /* Ocupa el 35% superior de la pantalla */
+    min-height: unset;
+    border-left: none;
+    border-bottom: 2px solid #333;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    z-index: 10;
+  }
+
+  .cart-header {
+    padding: 10px 15px; /* Menos padding */
+  }
+  
+  .cart-header h2 {
+    font-size: 1.2rem;
+    margin: 0;
+  }
+
+  .cart-items-container {
+    padding: 10px;
+  }
+
+  /* Ajustar items del carrito para que sean más compactos */
+  .cart-item {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .qty-controls {
+    height: 32px; /* Botones más pequeños */
+    margin: 0 10px;
+  }
+
+  .cart-footer {
+    padding: 10px 15px;
+  }
+  
+  .btn-pay {
+    margin-top: 5px;
+    padding: 10px;
+    font-size: 1rem;
+  }
+
+  /* 3. Sección Catálogo (Se va abajo y ocupa el resto) */
+  .catalog-section {
+    width: 100%;
+    height: 65vh; /* Ocupa el 65% restante */
+    padding: 15px;
+    border-right: none;
+  }
+
+  .search-input {
+    padding: 10px 15px; /* Input más compacto */
+  }
+
+  /* 4. Grid de Productos (2 columnas en celular) */
+  .products-grid {
+    /* Reduce el min-width de 200px a 135px para que quepan 2 en iPhone/Android */
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); 
+    gap: 10px;
+  }
+
+  .product-card-pos {
+    height: 180px; /* Tarjetas más bajitas */
+    padding: 15px 10px;
+  }
+
+  .card-icon-placeholder {
+    width: 50px;
+    height: 50px;
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+  }
+
+  .product-info h3 {
+    font-size: 0.95rem;
+  }
+
+  .pos-price-tag {
+    padding: 5px 15px;
+    font-size: 0.9rem;
+  }
 }

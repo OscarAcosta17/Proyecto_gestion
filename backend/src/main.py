@@ -179,14 +179,29 @@ def get_products(db: Session = Depends(get_db), current_user: User = Depends(get
 
 @app.post("/products", response_model=ProductResponse)
 def create_product(product: ProductCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # 1. Verificar si ya existe
     existing = db.query(Product).filter(Product.barcode == product.barcode, Product.user_id == current_user.id).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Ya existe un producto")
+        raise HTTPException(status_code=400, detail="Ya existe un producto con este código")
 
+    # 2. Crear el Producto
     new_product = Product(**product.dict(), user_id=current_user.id)
     db.add(new_product)
     db.commit()
     db.refresh(new_product)
+
+    # 3. --- NUEVO: SI HAY STOCK INICIAL, GUARDAR EN HISTORIAL ---
+    if new_product.stock > 0:
+        initial_movement = MovementHistory(
+            product_id=new_product.id,
+            user_id=current_user.id,
+            movement_type="suma",       # Tipo "suma" para que aparezca como entrada
+            quantity_changed=new_product.stock,
+            final_stock=new_product.stock
+        )
+        db.add(initial_movement)
+        db.commit()
+
     return new_product
 
 @app.post("/update-stock")

@@ -3,315 +3,258 @@
 :root {
   --bg-main: #121212;
   --bg-card: #1e1e1e;
-  --bg-card-soft: #252525;
-  --border: #333;
-  --text-main: #e0e0e0;
-  --text-muted: #aaaaaa;
-  --green: #2e7d32;
-  --green-hover: #1b5e20;
-  --red: #c62828;
-  --red-hover: #b71c1c;
-  --accent: #3a3a3a;
-  --accent-hover: #4a4a4a;
+  --bg-input: #252525;
+  --border-color: #333333;
+  
+  /* NEONES VIBRANTES */
+  --neon-green: #00e676;
+  --neon-green-dark: #00a854;
+  --neon-blue: #2979ff;
+  --neon-red: #ff1744;
+  --neon-yellow: #ffea00;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
 }
 
-* {
-  box-sizing: border-box;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
+* { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+/* 4. SCROLLBAR PERSONALIZADO */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-main); }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #666; }
 
 body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
   margin: 0;
-  background: var(--bg-main);
-  color: var(--text-main);
-  overflow-x: hidden;
+  background-image: radial-gradient(circle at 10% 20%, rgba(0, 230, 118, 0.02) 0%, transparent 20%),
+                    radial-gradient(circle at 90% 80%, rgba(41, 121, 255, 0.02) 0%, transparent 20%);
+  background-attachment: fixed;
 }
 
-.app {
-  width: 100%;
-  max-width: 100%;
-  padding: 1.5rem 2rem;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+.app { padding: 20px 30px; min-height: 100vh; display: flex; flex-direction: column; gap: 25px; }
 
-/* ===== ANIMACIONES ===== */
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+/* ANIMACIONES */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ===== HEADER ===== */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--bg-card);
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+/* HEADER */
+.header-container {
+  background-color: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color);
+  padding: 15px 25px; display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3); animation: slideUp 0.3s ease-out;
 }
+.header-content h1 { margin: 0; font-size: 1.8rem; font-weight: 800; color: var(--text-primary); }
+.header-content p { margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem; }
 
-.header h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-}
-
-/* Botón Volver con Hover Rojo */
-.header button {
-  background: var(--bg-card-soft);
-  color: white;
-  border: 1px solid var(--border);
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.header button:hover {
-  background: var(--red); /* <--- ROJO AL PASAR EL MOUSE */
-  border-color: var(--red-hover);
-  box-shadow: 0 0 8px rgba(198, 40, 40, 0.4);
-}
-
-/* ===== GRID PRINCIPAL ===== */
+/* 1. GRID (Panel Izquierdo Más Ancho) */
 .grid {
-  display: grid;
-  grid-template-columns: 350px 1fr; 
-  gap: 2rem; 
-  align-items: stretch;
-  width: 100%;
+  display: grid; grid-template-columns: 400px 1fr; gap: 25px; align-items: start;
+  animation: slideUp 0.4s ease-out;
 }
+.left-column { display: flex; flex-direction: column; gap: 20px; }
+.right-column { display: flex; flex-direction: column; flex-grow: 1; min-width: 0; }
 
-/* ===== COLUMNAS ===== */
-.left-column {
-  display: flex;
-  flex-direction: column;
-  /* AUMENTADO: Mayor separación entre bloques */
-  gap: 4rem; 
+/* TARJETAS KPI */
+.kpi-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+.kpi-card {
+  background: var(--bg-card); padding: 20px; border-radius: 10px; border: 1px solid var(--border-color);
+  border-top: 4px solid transparent; display: flex; flex-direction: column;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
+.kpi-card.green { border-top-color: var(--neon-green); }
+.kpi-card.blue { border-top-color: var(--neon-blue); }
+.kpi-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 5px; }
+.kpi-value { font-size: 1.6rem; font-weight: 800; color: #fff; }
+.kpi-value.green-text { color: var(--neon-green); }
+.kpi-value.blue-text { color: var(--neon-blue); }
 
-.right-column {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
+/* 2. TARJETAS LATERALES CON COLOR */
+.card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.2s; }
+.form-card { border-left: 4px solid var(--neon-green); } /* Borde verde lateral */
+.scanner-card { border-left: 4px solid var(--neon-blue); } /* Borde azul lateral */
 
-/* ===== CARDS ===== */
-.card {
-  background: var(--bg-card);
-  border-radius: 8px;
-  padding: 1.5rem;
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-  transition: border-color 0.2s;
-}
-
-.card:hover { border-color: #555; }
-
-.right-column .card {
-  flex-grow: 1; 
-  display: flex;
-  flex-direction: column;
-}
-
-.card-title {
-  margin-top: 0;
-  margin-bottom: 1.2rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #fff;
-}
-
-/* ===== FORMULARIOS ===== */
-form { animation: slideIn 0.3s ease-out; }
-
-/* ===== INPUTS & BOTONES ===== */
+/* INPUTS Y LABELS */
+.input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+.input-group label { font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; }
 input {
-  width: 100%;
-  padding: 12px;
-  background: var(--bg-card-soft);
-  border: 1px solid var(--border);
-  color: white;
-  border-radius: 6px;
-  margin-bottom: 12px;
-  outline: none;
-  font-size: 0.95rem;
-  /* Transición suave para el efecto de luz */
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);
+  padding: 12px 15px; border-radius: 8px; width: 100%; outline: none; font-size: 0.95rem; transition: 0.2s;
+}
+input:focus { border-color: var(--neon-green); background-color: #2a2a2a; box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.15); }
+
+/* 3. SELECTOR DE MODO (Verde en StatsPage style) */
+.stock-mode-selector {
+  display: flex; gap: 0; background: #252525; border-radius: 8px; margin-bottom: 15px;
+  border: 1px solid var(--border-color); overflow: hidden;
+}
+.mode-btn {
+  flex: 1; padding: 10px; background: transparent; color: var(--text-secondary); border: none;
+  cursor: pointer; font-weight: 600; transition: 0.2s;
+  border-right: 1px solid var(--border-color);
+}
+.mode-btn:last-child { border-right: none; }
+.mode-btn.active {
+  background: var(--neon-green); /* VERDE AHORA */
+  color: #000; /* Texto oscuro para contraste */
 }
 
-/* EFECTO LUMINOSO AL ESCRIBIR */
-input:focus {
-  border-color: #fff; /* Borde blanco puro */
-  background-color: #2a2a2a;
-  /* Glow blanco intenso y difuminado hacia afuera */
-  box-shadow: 0 0 15px 2px rgba(255, 255, 255, 0.3); 
-  transform: scale(1.02); /* Se agranda un pelín para destacar */
+/* 3. INPUTS DE CAJA/UNIDAD (Mismo tamaño) */
+.stock-input-container { height: 50px; display: flex; align-items: center; } /* Contenedor fijo */
+.stock-input-container input { height: 100%; font-size: 1rem; }
+
+.box-inputs-row { display: flex; gap: 10px; align-items: center; height: 100%; width: 100%; }
+.box-inputs-row input { text-align: center; }
+.box-x { color: var(--text-secondary); font-weight: bold; }
+
+/* 6. ESCÁNER (Sin emojis, estilo técnico) */
+.scanner-status { 
+  background: rgba(41, 121, 255, 0.1); color: var(--neon-blue); 
+  padding: 10px; border-radius: 6px; text-align: center; font-weight: 600; margin-bottom: 10px;
+  border: 1px solid var(--neon-blue);
 }
 
-input::placeholder {
-  color: #666;
-}
+/* BOTONES */
+button { border: none; border-radius: 8px; padding: 12px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+.btn-primary { background-color: var(--neon-green); color: #000; width: 100%; box-shadow: 0 4px 10px rgba(0, 230, 118, 0.2); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 230, 118, 0.3); }
+.btn-secondary { background-color: #333; color: #fff; border: 1px solid var(--border-color); }
+.btn-secondary:hover { background-color: #444; border-color: #666; }
+.btn-danger { background-color: var(--neon-red); color: white; width: 100%; }
 
-input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none; /* Sin brillo si está deshabilitado */
-}
-button {
-  border: none; border-radius: 6px; padding: 12px; cursor: pointer;
-  font-weight: 600; font-size: 0.95rem; transition: opacity 0.2s, transform 0.1s;
-}
-button:active { transform: scale(0.98); }
-button:hover { opacity: 0.9; }
-
-.btn { background: var(--accent); color: white; width: 100%; }
-.btn-green { background: var(--green); color: white; width: 100%; }
-.btn-red { background: var(--red); color: white; width: 100%; }
-
-/* ===== TABLA ===== */
-.table-container {
-  overflow-x: auto;
-  width: 100%;
-  flex-grow: 1; 
-}
-
+/* TABLA */
+.table-wrapper { flex-grow: 1; overflow-x: auto; border: 1px solid var(--border-color); border-radius: 10px; background-color: var(--bg-card); }
 table { width: 100%; border-collapse: collapse; white-space: nowrap; }
-table th {
-  text-align: left; padding: 14px; border-bottom: 1px solid var(--border);
-  color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;
-  letter-spacing: 0.5px; font-weight: 600; background: var(--bg-card);
+th { text-align: left; padding: 16px 20px; background-color: #252525; color: var(--text-secondary); font-size: 0.75rem; border-bottom: 1px solid var(--border-color); text-transform: uppercase; letter-spacing: 1px; }
+td { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #eee; vertical-align: middle; }
+.badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-block; min-width: 45px; text-align: center; }
+.badge.green { background: rgba(0, 230, 118, 0.15); color: var(--neon-green); border: 1px solid var(--neon-green); }
+.badge.yellow { background: rgba(255, 234, 0, 0.15); color: var(--neon-yellow); border: 1px solid var(--neon-yellow); }
+.badge.red { background: rgba(255, 23, 68, 0.15); color: var(--neon-red); border: 1px solid var(--neon-red); }
+
+/* CONTROLES TABLA */
+.table-controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
+.search-wrapper { flex-grow: 1; }
+.search-wrapper input { padding-left: 15px; background-color: var(--bg-main); height: 45px; }
+.filter-toggle { display: flex; align-items: center; gap: 10px; color: var(--text-secondary); cursor: pointer; background: var(--bg-card); padding: 0 20px; height: 45px; border-radius: 8px; border: 1px solid var(--border-color); font-weight: 600; }
+.filter-toggle input { width: 18px; height: 18px; accent-color: var(--neon-green); margin: 0; }
+
+/* 5. MODAL POPUP MEJORADO */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 2000; animation: fadeIn 0.3s; }
+.modal-content { background: var(--bg-card); border: 1px solid var(--border-color); padding: 30px; border-radius: 16px; width: 95%; max-width: 450px; box-shadow: 0 25px 60px rgba(0,0,0,0.6); text-align: center; animation: slideUp 0.3s; }
+.modal-content h2 { margin-top: 0; color: #fff; margin-bottom: 20px; }
+
+.modal-tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #252525; padding: 5px; border-radius: 8px; }
+.tab-option { flex: 1; padding: 10px; border-radius: 6px; background: transparent; color: var(--text-secondary); transition: 0.2s; }
+.tab-option.active.add { background: var(--neon-green); color: #000; }
+.tab-option.active.sub { background: var(--neon-red); color: #fff; }
+.tab-option.active.set { background: var(--neon-blue); color: #fff; }
+
+.modal-footer { display: flex; gap: 15px; margin-top: 25px; }
+
+@media (max-width: 900px) {
+  /* La Grid pasa a 1 sola columna */
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ARREGLO HEADER: Apila el texto y el botón */
+  .header-container {
+    flex-direction: column;
+    align-items: stretch; /* El botón ocupa todo el ancho */
+    text-align: center;
+    padding: 20px;
+  }
+
+  .header-content h1 {
+    font-size: 1.5rem; /* Letra un poco más pequeña para que quepa */
+    margin-bottom: 5px;
+  }
+
+  /* Ajustes generales para móvil */
+  .app { padding: 15px; }
+  .table-controls { flex-direction: column; align-items: stretch; }
+  .box-inputs-container { gap: 10px; padding: 10px; }
+  
+  /* Ajuste de inputs en móvil */
+  .stock-input-container { height: auto; }
+  .box-inputs-row { flex-wrap: nowrap; }
 }
-table td {
-  padding: 14px; border-bottom: 1px solid #2a2a2a; color: var(--text-main);
-  font-size: 0.95rem; vertical-align: middle;
+
+/* ... (Todo el CSS anterior es válido, solo agrega esto para el desplegable) ... */
+
+/* Estilo para el Header Desplegable */
+.card-header-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding-bottom: 10px; /* Espacio si está abierto */
+    user-select: none;
 }
-table tr:last-child td { border-bottom: none; }
-table tr:hover { background-color: rgba(255,255,255,0.03); }
 
-.muted { color: var(--text-muted); font-size: 0.85rem; }
+.card-header-toggle:hover h3 {
+    filter: brightness(1.2);
+}
 
-/* ===== DROPDOWN ===== */
-/* src/styles/InventoryPage.css */
+.toggle-arrow {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
 
-/* ... (tus estilos anteriores) ... */
+/* Animación al abrir */
+.slide-down-animation {
+    animation: fadeIn 0.3s ease-out;
+}
 
-/* === MENÚ DESPLEGABLE (EXPORTAR) === */
+/* Dropdown del Menú Exportar (Ajuste visual) */
 .dropdown-menu {
-  position: absolute;
-  top: 110%; /* Un poquito separado del botón */
-  right: 0;
-  background: var(--bg-card); /* Fondo oscuro #1e1e1e */
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.5); /* Sombra fuerte para resaltar */
-  overflow: hidden;
-  z-index: 100;
-  min-width: 140px;
-  display: flex;
-  flex-direction: column;
-  animation: fadeIn 0.2s ease-out;
+    position: absolute; top: 115%; right: 0; background-color: var(--bg-card);
+    border: 1px solid var(--border-color); border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6); z-index: 100; overflow: hidden; min-width: 160px;
 }
-
 .dropdown-menu button {
-  background: transparent;
-  border: none;
-  color: var(--text-main); /* <--- ¡ESTO ARREGLA EL TEXTO NEGRO! (Lo pone blanco/gris) */
-  padding: 12px 15px;
-  text-align: left;
-  cursor: pointer;
-  width: 100%;
-  transition: all 0.2s;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  gap: 8px; /* Espacio entre icono y texto */
-}
-
-.dropdown-menu button:hover {
-  background: var(--bg-card-soft); /* Efecto al pasar el mouse */
-  color: white;
-  padding-left: 20px; /* Pequeña animación de desplazamiento */
+    background: transparent; color: var(--text-primary); width: 100%; text-Align: left; padding: 12px 20px;
+    border-bottom: 1px solid #333;
 }
 .dropdown-menu button:last-child { border-bottom: none; }
+.dropdown-menu button:hover { background: rgba(255,255,255,0.05); color: var(--neon-green); }
 
-/* ===== FEEDBACK ===== */
-.feedback {
-  padding: 12px; border-radius: 6px; margin-bottom: 20px;
-  text-align: center; font-weight: 600; animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+.card-header-interactive {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    padding-bottom: 5px;
 }
-.feedback.in { background: var(--green); color: white; }
-.feedback.out { background: var(--red); color: white; }
-
-.footer {
-  margin-top: auto; padding-top: 2rem; text-align: center;
-  color: var(--text-muted); font-size: 0.8rem;
-}
-/* === SELECTOR DE MODO DE STOCK === */
-.stock-mode-selector {
-  display: flex;
-  background: var(--bg-card-soft);
-  border-radius: 8px;
-  padding: 4px;
-  margin-bottom: 15px;
-  border: 1px solid var(--border);
+.card-header-interactive:hover h3 {
+    filter: brightness(1.2);
 }
 
-.mode-btn {
-  flex: 1;
-  padding: 8px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 6px;
-  font-weight: 600;
-  transition: all 0.2s;
+.card-header-static {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-bottom: 5px;
 }
 
-.mode-btn.active {
-  background: var(--accent);
-  color: white;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+.card-subtitle {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
 }
 
-/* === INPUTS DE CAJA === */
-.box-inputs-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+.toggle-arrow {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
 }
 
-.box-separator {
-  color: var(--text-muted);
-  font-weight: bold;
-  font-size: 1.2rem;
-}
-
-.calculated-stock {
-  text-align: center;
-  color: var(--green);
-  font-weight: bold;
-  margin-top: 5px;
-  margin-bottom: 15px;
-  font-size: 0.95rem;
-}
-/* ===== RESPONSIVE ===== */
-@media (max-width: 900px) {
-  .app { padding: 15px; }
-  .grid { grid-template-columns: 1fr; gap: 1.5rem; }
-  .left-column { gap: 1.5rem; }
-  .right-column .card { min-height: 400px; }
-  .table-container { display: block; width: 100%; overflow-x: auto; }
+/* Animación suave para el desplegable */
+.slide-down-animation {
+    animation: fadeIn 0.3s ease-out;
+    margin-top: 15px; /* Espacio cuando se despliega */
 }
