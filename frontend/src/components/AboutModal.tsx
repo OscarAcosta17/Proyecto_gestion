@@ -6,42 +6,57 @@ interface Props {
   onClose: () => void;
 }
 
-// --- DATOS AMPLIADOS (7 PESTAÑAS) ---
+// --- DATOS COMPLETOS (10 PESTAÑAS) ---
 const slides = [
   {
     icon: "🚀",
-    title: "Tu Negocio, Bajo Control",
-    text: "Centraliza toda la operación de tu almacén en una sola plataforma. Dile adiós al caos de los cuadernos y hojas de cálculo. Gestiona tu inventario de forma rápida, moderna y sin complicaciones."
+    title: "Gestión Integral v2.0",
+    text: "Bienvenido a la evolución de tu negocio. Hemos integrado inventario, ventas y finanzas en una sola plataforma oscura, moderna y optimizada para la velocidad."
   },
   {
-    icon: "📱", // NUEVO
-    title: "Acceso Total",
-    text: "Lleva tu negocio en el bolsillo. Nuestra interfaz es 100% responsiva, lo que significa que puedes revisar el stock, hacer ajustes o ver reportes desde tu celular, tablet o computadora."
+    icon: "🛒",
+    title: "Punto de Venta (POS)",
+    text: "Vende sin fricción. Agrega productos al carrito visualmente, calcula vueltos automáticos y cierra ventas en segundos. Una experiencia fluida tanto en PC como en celular."
   },
   {
-    icon: "📦",
-    title: "Inventario Inteligente",
-    text: "Agrega productos, actualiza precios y ajusta el stock en segundos. El sistema trabaja por ti: te avisa automáticamente con alertas visuales rojas cuando un producto está por agotarse."
+    icon: "🏆",
+    title: "Productos Estrella",
+    text: "¿Sabes cuál es tu producto ganador? Nuestro Dashboard incluye un ranking en tiempo real de los artículos más vendidos para que nunca te falte lo que tus clientes más buscan."
   },
   {
-    icon: "⚡", // NUEVO
-    title: "Flujo de Trabajo Veloz",
-    text: "Diseñado para la velocidad. Escanea códigos, busca productos instantáneamente y registra movimientos con menos clics. Ahorra horas de trabajo administrativo cada semana."
+    icon: "🚨",
+    title: "Asistente de Compras",
+    text: "No pierdas ventas por falta de stock. El sistema detecta automáticamente los productos con pocas unidades y te genera una lista de alerta para que sepas exactamente qué reponer."
   },
   {
-    icon: "📈",
-    title: "Decisiones con Datos",
-    text: "No adivines, mide. Visualiza el valor monetario real de tu bodega y analiza el rendimiento general mediante gráficos interactivos y métricas financieras en tiempo real."
+    icon: "🧾",
+    title: "Tickets Profesionales",
+    text: "Dale seriedad a tu negocio. Genera automáticamente recibos estilo ticket térmico tras cada venta, listos para imprimir o compartir digitalmente con tus clientes."
   },
   {
-    icon: "📝",
-    title: "Trazabilidad Total",
-    text: "Seguridad y transparencia. Cada entrada o salida queda registrada en un historial inmutable. Sabrás exactamente qué pasó, cuándo pasó y qué usuario realizó el ajuste."
+    icon: "🔫",
+    title: "Escáner & Cámara",
+    text: "Olvídate de teclear códigos. Usa tu lector de códigos de barras o la cámara de tu celular para buscar productos y realizar ingresos de mercadería a la velocidad de la luz."
   },
   {
-    icon: "🛡️",
-    title: "Seguridad y Soporte",
-    text: "Tu información está blindada con estándares de seguridad modernos (JWT). Además, cuentas con un módulo de soporte técnico integrado para resolver cualquier duda al instante."
+    icon: "💰",
+    title: "Finanzas Claras",
+    text: "Cuentas claras, negocio sano. Visualiza tu Ganancia Neta (Ventas - Costos), el patrimonio total invertido en bodega y tus ingresos diarios en un solo panel ejecutivo."
+  },
+  {
+    icon: "📂",
+    title: "Exportación de Datos",
+    text: "Tu información te pertenece. Descarga reportes detallados de tu inventario o historial de ventas en formatos Excel (.xlsx) y PDF compatibles con cualquier sistema contable."
+  },
+  {
+    icon: "👤",
+    title: "Control Total",
+    text: "Administra tu perfil, actualiza tu seguridad y mantén el control de tu sesión. Todo respaldado por una arquitectura segura (JWT) y una base de datos robusta (SQL)."
+  },
+  {
+    icon: "🎧", // NUEVO: Soporte
+    title: "Soporte Técnico",
+    text: "No estás solo. Si encuentras un problema o tienes dudas, utiliza nuestro sistema de tickets integrado para contactar directamente con el equipo de soporte y recibir ayuda rápida."
   }
 ];
 
@@ -58,7 +73,6 @@ const AboutModal: React.FC<Props> = ({ isOpen, onClose }) => {
     if (currentSlide > 0) setCurrentSlide(curr => curr - 1);
   };
 
-  // Función para volver al inicio
   const reset = () => {
     setCurrentSlide(0);
   };
@@ -68,7 +82,8 @@ const AboutModal: React.FC<Props> = ({ isOpen, onClose }) => {
       <div className="about-box" onClick={e => e.stopPropagation()}>
         <button className="btn-close-about" onClick={onClose}>×</button>
         
-        <div className="slide-container" key={currentSlide}>
+        {/* Contenido del Slide */}
+        <div className="slide-container" key={currentSlide} style={{animation: 'fadeIn 0.3s'}}>
           <span className="slide-icon">{slides[currentSlide].icon}</span>
           <h2 className="slide-title">{slides[currentSlide].title}</h2>
           <p className="slide-description">{slides[currentSlide].text}</p>
@@ -77,8 +92,8 @@ const AboutModal: React.FC<Props> = ({ isOpen, onClose }) => {
         {/* BARRA DE NAVEGACIÓN */}
         <div className="about-navigation">
           
-          <div style={{display: 'flex', alignItems: 'center'}}>
-            {/* BOTÓN REINICIAR (NUEVO) */}
+          <div style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
+            {/* Botón de reinicio si no estamos en el inicio */}
             {currentSlide > 0 && (
                 <button className="nav-reset" onClick={reset} title="Volver al inicio">
                     ↺
@@ -90,6 +105,7 @@ const AboutModal: React.FC<Props> = ({ isOpen, onClose }) => {
             </button>
           </div>
           
+          {/* PUNTITOS DE NAVEGACIÓN */}
           <div className="nav-dots">
             {slides.map((_, index) => (
               <span 

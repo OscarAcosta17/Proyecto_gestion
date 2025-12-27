@@ -265,7 +265,7 @@ const InventoryPage = () => {
                     <td style={{fontWeight:600}}>{p.name}</td>
                     <td style={{textAlign:'right'}}>${p.sale_price.toLocaleString()}</td>
                     <td style={{textAlign:'center'}}><span className={`badge ${p.stock<5 ? (p.stock===0?'red':'yellow') : 'green'}`}>{p.stock}</span></td>
-                    <td style={{textAlign:'center'}}><button className="btn-secondary" style={{padding:'6px 12px', fontSize:'0.8rem'}} onClick={() => { setSelectedProduct(p); setUpdateType('suma'); setStockMode('unit'); setShowStockModal(true); }}>📦 Ajustar</button></td>
+                    <td style={{textAlign:'center'}}><button className="btn-secondary" style={{padding:'6px 12px', fontSize:'0.8rem'}} onClick={() => { setSelectedProduct(p); setUpdateType('suma'); setStockMode('unit'); setShowStockModal(true); }}>Ajustar</button></td>
                   </tr>
                 ))}
               </tbody>
