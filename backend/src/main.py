@@ -1,24 +1,27 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, desc
 from pydantic import BaseModel
 from typing import List
 from jose import jwt, JWTError
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime
+from datetime import datetime, timedelta # <--- IMPORTANTE: timedelta agregado
+from openpyxl import Workbook
+from openpyxl.styles import Font
+from sqlalchemy import extract
+import csv
+import io
+from fastapi.responses import StreamingResponse
 
-# --- IMPORTS LOCALES ---
 from .database import engine, Base, get_db
-from .models import User, Product, SupportTicket, MovementHistory
+from .models import User, Product, SupportTicket, MovementHistory, Sale, SaleItem
 from .security import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM
+from .schemas import SaleCreate, SaleResponse
 
-# Crea las tablas si no existen
 Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="Inventory API")
 
-# --- CONFIGURACIÓN CORS ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -29,10 +32,7 @@ app.add_middleware(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-# ==========================================
-#        ESQUEMAS PYDANTIC
-# ==========================================
-
+# --- SCHEMAS ---
 class ProductCreate(BaseModel):
     barcode: str
     name: str
@@ -93,10 +93,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     return user
 
 # ==========================================
-#             ENDPOINTS
+#             ENDPOINTS USUARIO/AUTH
 # ==========================================
-
-# 1. REGISTRO (Corregido para guardar todos los campos)
 @app.post("/register")
 def register_user(user_data: UserRegisterSchema, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user_data.email).first()
@@ -117,7 +115,6 @@ def register_user(user_data: UserRegisterSchema, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Usuario creado con éxito"}
 
-# 2. LOGIN
 @app.post("/login") 
 def login(user_data: UserLoginSchema, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == user_data.email).first()
@@ -134,7 +131,6 @@ def login(user_data: UserLoginSchema, db: Session = Depends(get_db)):
         "first_name": user.first_name 
     }
 
-# 3. PERFIL (Obtener datos reales de BDD)
 @app.get("/user/me")
 def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return {
@@ -145,7 +141,6 @@ def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_curre
         "email": current_user.email
     }
 
-# 4. ACTUALIZAR PERFIL
 @app.put("/user/update")
 def update_user(user_data: UserRegisterSchema, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == current_user.id).first()
@@ -169,7 +164,15 @@ def update_user(user_data: UserRegisterSchema, db: Session = Depends(get_db), cu
     db.commit()
     return {"message": "Datos actualizados correctamente"}
 
-# 5. PRODUCTOS
+@app.delete("/user/delete")
+def delete_account(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Cuenta eliminada"}
+
+# ==========================================
+#             ENDPOINTS PRODUCTOS
+# ==========================================
 @app.get("/products", response_model=List[ProductResponse])
 def get_products(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return db.query(Product).filter(Product.user_id == current_user.id).all()
@@ -186,7 +189,6 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db), curren
     db.refresh(new_product)
     return new_product
 
-# 6. STOCK E HISTORIAL
 @app.post("/update-stock")
 def update_stock(update: StockUpdate, db: Session = Depends(get_db)):
     product = db.query(Product).filter(Product.barcode == update.barcode).first()
@@ -212,12 +214,69 @@ def update_stock(update: StockUpdate, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Stock actualizado"}
 
-# 7. BORRAR CUENTA
-@app.delete("/user/delete")
-def delete_account(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    db.delete(current_user)
+# ==========================================
+#             VENTAS (SALES)
+# ==========================================
+
+@app.post("/sales", response_model=SaleResponse)
+def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    
+    # 1. Crear la venta vacía
+    new_sale = Sale(user_id=current_user.id, total_amount=0)
+    db.add(new_sale)
     db.commit()
-    return {"message": "Cuenta eliminada"}
+    db.refresh(new_sale)
+
+    total_sale_amount = 0
+
+    try:
+        for item in sale_data.items:
+            product = db.query(Product).filter(Product.id == item.product_id).first()
+            
+            if not product:
+                raise HTTPException(status_code=404, detail=f"Producto {item.product_id} no encontrado")
+            
+            # Validar stock
+            if product.stock < item.quantity:
+                raise HTTPException(status_code=400, detail=f"Stock insuficiente para {product.name}")
+
+            # Calcular subtotal
+            subtotal = product.sale_price * item.quantity 
+            total_sale_amount += subtotal
+
+            # Guardar el detalle
+            sale_item = SaleItem(
+                sale_id=new_sale.id,
+                product_id=product.id,
+                quantity=item.quantity,
+                unit_price=product.sale_price 
+            )
+            db.add(sale_item)
+
+            # Restar stock
+            product.stock -= item.quantity
+            
+            # Guardar en historial
+            history = MovementHistory(
+                product_id=product.id,
+                movement_type="venta", 
+                quantity_changed=item.quantity, 
+                user_id=current_user.id,
+                final_stock=product.stock 
+            )
+            db.add(history)
+
+        # Actualizar total
+        new_sale.total_amount = total_sale_amount
+        db.commit()
+        db.refresh(new_sale)
+        
+        return new_sale
+
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: {e}") 
+        raise e
 
 # ==========================================
 #        DASHBOARD / ESTADÍSTICAS
@@ -225,36 +284,28 @@ def delete_account(db: Session = Depends(get_db), current_user: User = Depends(g
 
 @app.get("/dashboard/stats")
 def get_dashboard_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # 1. Total de Productos registrados por el usuario
     total_products = db.query(Product).filter(Product.user_id == current_user.id).count()
     
-    # 2. Productos con Stock Bajo (Menos de 5 unidades)
     low_stock = db.query(Product).filter(
         Product.user_id == current_user.id, 
         Product.stock < 5
     ).count()
     
-    # 3. Valor Total del Inventario (Suma de Stock * Precio Costo)
-    # Usamos 'func.sum' para que la base de datos haga el cálculo rápido
     inventory_value = db.query(func.sum(Product.stock * Product.cost_price)).filter(
         Product.user_id == current_user.id
-    ).scalar() or 0 # Si es None, devuelve 0
+    ).scalar() or 0
 
-    # 4. Últimos 5 movimientos (Historial reciente)
-    # Hacemos un 'join' para obtener el nombre del producto asociado al movimiento
     recent_movements = db.query(MovementHistory).join(Product).filter(
         Product.user_id == current_user.id
     ).order_by(MovementHistory.timestamp.desc()).limit(5).all()
 
-    # Formateamos los datos para enviarlos limpios al Frontend
     movements_data = []
     for mov in recent_movements:
-        # Obtenemos el nombre del producto (ya que movement_history solo tiene el ID)
         product_name = db.query(Product.name).filter(Product.id == mov.product_id).scalar()
         
         movements_data.append({
             "product": product_name,
-            "type": mov.movement_type,      # "suma", "resta" o "set"
+            "type": mov.movement_type, 
             "quantity": mov.quantity_changed,
             "date": mov.timestamp
         })
@@ -265,3 +316,138 @@ def get_dashboard_stats(db: Session = Depends(get_db), current_user: User = Depe
         "inventory_value": inventory_value,
         "recent_movements": movements_data
     }
+
+@app.get("/sales/stats")
+def get_sales_statistics(
+    range: str = "recent", 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    now = datetime.now()
+    
+    # 1. Definir fechas base
+    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    start_of_week = start_of_day - timedelta(days=start_of_day.weekday())
+
+    # 2. KPIs Generales
+    sales_today = db.query(func.sum(Sale.total_amount)).filter(
+        Sale.user_id == current_user.id,
+        Sale.date >= start_of_day
+    ).scalar() or 0
+
+    sales_month = db.query(func.sum(Sale.total_amount)).filter(
+        Sale.user_id == current_user.id,
+        Sale.date >= start_of_month
+    ).scalar() or 0
+
+    # Ganancia del MES (Venta - Costo)
+    month_profit = db.query(
+        func.sum((SaleItem.unit_price - Product.cost_price) * SaleItem.quantity)
+    ).join(Product).join(Sale).filter(
+        Sale.user_id == current_user.id,
+        Sale.date >= start_of_month
+    ).scalar() or 0
+
+    # NUEVO: Ganancia TOTAL HISTÓRICA (Sin filtro de fecha)
+    total_profit = db.query(
+        func.sum((SaleItem.unit_price - Product.cost_price) * SaleItem.quantity)
+    ).join(Product).join(Sale).filter(
+        Sale.user_id == current_user.id
+    ).scalar() or 0
+
+    # 3. Lógica del Historial
+    history_query = db.query(Sale).filter(
+        Sale.user_id == current_user.id
+    ).order_by(Sale.date.desc())
+
+    if range == "daily":
+        sales_results = history_query.filter(Sale.date >= start_of_day).all()
+    elif range == "weekly":
+        sales_results = history_query.filter(Sale.date >= start_of_week).all()
+    elif range == "monthly":
+        sales_results = history_query.filter(Sale.date >= start_of_month).all()
+    else: 
+        sales_results = history_query.limit(10).all()
+
+    history = []
+    for sale in sales_results:
+        item_count = sum(item.quantity for item in sale.items)
+        history.append({
+            "id": sale.id,
+            "date": sale.date,
+            "total": sale.total_amount,
+            "items_count": item_count
+        })
+
+    # 4. Top Productos
+    top_products_query = db.query(
+        Product.name,
+        func.sum(SaleItem.quantity).label("total_sold")
+    ).join(SaleItem.product).join(SaleItem.sale).filter(
+        Sale.user_id == current_user.id,
+        Sale.date >= start_of_month
+    ).group_by(Product.name).order_by(desc("total_sold")).limit(5).all()
+
+    top_products = [{"name": t[0], "sold": t[1]} for t in top_products_query]
+
+    return {
+        "today_income": sales_today,
+        "month_income": sales_month,
+        "month_profit": month_profit, 
+        "total_profit": total_profit, # <--- Enviamos el nuevo dato
+        "sales_history": history,
+        "top_products": top_products
+    }
+# --- NUEVO ENDPOINT: EXPORTAR A EXCEL REAL (.XLSX) ---
+@app.get("/sales/export")
+def export_sales_excel(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    sales = db.query(Sale).filter(Sale.user_id == current_user.id).order_by(Sale.date.desc()).all()
+
+    # 1. Crear un libro de Excel real
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte de Ventas"
+
+    # 2. Encabezados
+    headers = ["ID Venta", "Fecha", "Total", "Productos"]
+    ws.append(headers)
+
+    # Estilo: Negrita para los encabezados
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    # 3. Llenar filas
+    for sale in sales:
+        # Formato lista productos: "Catnip (2) + Caja (1)"
+        items_list = []
+        for item in sale.items:
+            items_list.append(f"{item.product.name} ({item.quantity})")
+        items_str = " + ".join(items_list)
+        
+        # Escribir fila
+        ws.append([
+            sale.id,
+            sale.date.strftime("%d/%m/%Y %H:%M:%S"), # Fecha legible
+            sale.total_amount,
+            items_str
+        ])
+
+    # 4. --- MAGIA: AJUSTAR ANCHO DE COLUMNAS ---
+    # Ajustamos el ancho para que la fecha (Columna B) no salga con #####
+    ws.column_dimensions['A'].width = 10  # ID
+    ws.column_dimensions['B'].width = 22  # Fecha (Aquí arreglamos el ###)
+    ws.column_dimensions['C'].width = 15  # Total
+    ws.column_dimensions['D'].width = 50  # Productos (Bien ancha para que se lea)
+
+    # 5. Guardar en memoria
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    # 6. Retornar archivo Excel
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=reporte_ventas.xlsx"}
+    )

@@ -186,6 +186,53 @@ input:focus {
   75% { transform: translateX(5px); }
 }
 
+/* Asegura que el panel visual sea la referencia para posicionar el botón */
+.login-visual {
+  position: relative; /* <--- IMPORTANTE */
+  /* ... tus otros estilos de login-visual ... */
+}
+
+/* Estilo del Mini Icono de Info */
+.visual-info-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.15); /* Transparente sutil */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.visual-info-btn:hover {
+  background: white;
+  color: #1b5e20; /* Color verde oscuro al pasar el mouse */
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
+/* Asegura que la imagen se ajuste al botón redondo */
+.visual-info-btn img {
+  width: 110%;       /* Ocupa todo el ancho disponible */
+  height: 110%;      /* Ocupa todo el alto disponible */
+  object-fit: cover; /* Recorta la imagen si no es cuadrada para que no se estire */
+  border-radius: 50%; /* Si la imagen es cuadrada, esto la hace redonda */
+  pointer-events: none; /* Evita que el click en la imagen interfiera */
+}
+
+/* Ajuste opcional: Si la imagen se ve muy grande y toca los bordes */
+.visual-info-btn {
+  padding: 5px; /* Agrega un poco de espacio interno si lo necesitas */
+}
+
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
   .login-card {

@@ -12,29 +12,35 @@ import {
 import { Bar } from 'react-chartjs-2';
 import "../styles/StatsPage.css";
 
-// Registrar componentes del gráfico
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+// Interfaces
+interface InventoryStats {
+  total_products: number;
+  low_stock: number;
+  inventory_value: number;
+  recent_movements: { product: string; type: string; quantity: number; date: string; }[];
+}
+
+interface SalesStats {
+  today_income: number;
+  month_income: number;
+  month_profit: number; 
+  total_profit: number; // <--- NUEVO CAMPO
+  sales_history: { id: number; date: string; total: number; items_count: number; }[];
+  top_products: { name: string; sold: number; }[];
+}
 
 export default function StatsPage() {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<string | null>("chart"); // Gráfico abierto por defecto
-  
-  const [stats, setStats] = useState({
-    total_products: 0,
-    low_stock: 0,
-    inventory_value: 0,
-    recent_movements: []
-  });
+  const [activeTab, setActiveTab] = useState<'sales' | 'inventory'>('sales');
+  const [timeFilter, setTimeFilter] = useState<'recent' | 'daily' | 'weekly' | 'monthly'>('recent');
+  const [showStockModal, setShowStockModal] = useState(false);
 
-  // Estado para los datos de productos (para el gráfico)
+  const [invStats, setInvStats] = useState<InventoryStats | null>(null);
+  const [salesStats, setSalesStats] = useState<SalesStats | null>(null);
   const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
   const token = localStorage.getItem("token");
@@ -42,152 +48,246 @@ export default function StatsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Cargar Estadísticas Generales
-        const statsRes = await fetch(`${API_URL}/dashboard/stats`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (statsRes.ok) setStats(await statsRes.json());
+        const headers = { "Authorization": `Bearer ${token}` };
 
-        // 2. Cargar Productos para el Gráfico
-        const prodRes = await fetch(`${API_URL}/products`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+        const [invRes, salesRes, prodRes] = await Promise.all([
+            fetch(`${API_URL}/dashboard/stats`, { headers }),
+            fetch(`${API_URL}/sales/stats?range=${timeFilter}`, { headers }),
+            fetch(`${API_URL}/products`, { headers })
+        ]);
+
+        if (invRes.ok) setInvStats(await invRes.json());
+        if (salesRes.ok) setSalesStats(await salesRes.json());
         if (prodRes.ok) setProducts(await prodRes.json());
 
       } catch (error) {
         console.error("Error cargando datos:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
-  }, [API_URL, token]);
+  }, [API_URL, token, timeFilter]);
 
-  // Configuración de datos para el gráfico de barras
-  const chartData = {
-    labels: products.map(p => p.name), // Nombres de productos en el eje X
-    datasets: [
-      {
-        label: 'Unidades en Stock',
-        data: products.map(p => p.stock), // Cantidad de stock en el eje Y
-        backgroundColor: 'rgba(40, 167, 69, 0.6)', // Verde semitransparente
-        borderColor: '#28a745',
-        borderWidth: 1,
-      },
-    ],
-  };
+  const lowStockItems = products.filter(p => p.stock < 5);
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'top' as const, labels: { color: 'white' } },
-      title: { display: false },
-    },
-    scales: {
-        y: { ticks: { color: '#aaa' }, grid: { color: '#444' } },
-        x: { ticks: { color: '#aaa' }, grid: { display: false } }
+  const downloadExcel = async () => {
+    try {
+        const response = await fetch(`${API_URL}/sales/export`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error("Error");
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const now = new Date();
+        const fileName = `Reporte_Ventas_${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}.xlsx`;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    } catch (error) {
+        alert("Error descargando reporte.");
     }
   };
 
-  const toggleSection = (section: string) => {
-      setActiveSection(activeSection === section ? null : section);
+  const chartData = {
+    labels: products.map(p => p.name),
+    datasets: [{
+      label: 'Stock',
+      data: products.map(p => p.stock),
+      backgroundColor: 'rgba(52, 152, 219, 0.6)',
+      borderColor: '#3498db',
+      borderWidth: 1,
+    }],
   };
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, title: { display: false } },
+    scales: { y: { ticks: { color: '#888' }, grid: { color: '#333' } }, x: { ticks: { color: '#888' }, grid: { display: false } } }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-CL', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'
+    });
+  };
+
+  if (loading) return <div className="loading-container">Cargando...</div>;
 
   return (
     <div className="stats-container">
-      {/* HEADER */}
       <div className="stats-header shadow">
         <div>
-          <h1>📊 Centro de Estadísticas</h1>
-          <p style={{color: '#aaa', margin: 0}}>Visión más detallada de tu negocio</p>
+          <h1>📊 Dashboard Gerencial</h1>
+          <p style={{color: '#aaa', margin: 0}}>Visión integral del negocio</p>
         </div>
-        <button className="btn-secondary" onClick={() => navigate("/dashboard")}>
-          ← Volver
-        </button>
+        <button className="btn-secondary" onClick={() => navigate("/dashboard")}>← Volver</button>
       </div>
 
-      {/* 1. TARJETAS DE KPIs (ARREGLADAS) */}
       <div className="kpi-grid">
-        <div className="kpi-card shadow">
-          <h3>Total en Bodega</h3>
-          <span className="number">{stats.total_products}</span>
-          <small style={{color: '#aaaaaaff'}}>Productos únicos</small>
+        <div className="kpi-card income shadow">
+          <h3>Ventas Hoy</h3>
+          <span className="number">${(salesStats?.today_income || 0).toLocaleString('es-CL')}</span>
+          <small style={{color: '#2ecc71'}}>Ingresos diarios</small>
         </div>
         
-        <div className={`kpi-card shadow ${stats.low_stock > 0 ? 'alert' : ''}`}>
-          <h3>Alerta Stock</h3>
-          <span className="number">{stats.low_stock}</span>
-          <small style={{color: stats.low_stock > 0 ? '#ff6b6b' : '#aaa'}}>
-             {stats.low_stock > 0 ? 'Requieren reposición' : 'Todo en orden'}
+        <div className="kpi-card shadow">
+            <h3>Ventas Mes</h3>
+            <span className="number" style={{color: '#3498db'}}>${(salesStats?.month_income || 0).toLocaleString('es-CL')}</span>
+            <small style={{color: '#aaa'}}>Acumulado</small>
+        </div>
+
+        {/* --- TARJETA GANANCIA ACTUALIZADA --- */}
+        <div className="kpi-card profit shadow">
+            <h3>Ganancia Neta (Mes)</h3>
+            <span className="number" style={{color: '#f1c40f'}}>${(salesStats?.month_profit || 0).toLocaleString('es-CL')}</span>
+            {/* Aquí agregamos el Total Histórico en pequeño */}
+            <small style={{color: '#aaa'}}>
+                Histórico: <strong style={{color: '#f1c40f'}}>${(salesStats?.total_profit || 0).toLocaleString('es-CL')}</strong>
+            </small>
+        </div>
+
+        {/* --- TARJETA PATRIMONIO ACTUALIZADA --- */}
+        <div className="kpi-card iva shadow">
+          <h3>Patrimonio (Bruto)</h3>
+          <span className="number">${((invStats?.inventory_value || 0) * 1.19).toLocaleString('es-CL', {maximumFractionDigits:0})}</span>
+          {/* Aquí agregamos el valor Neto (Sin IVA) */}
+          <small style={{color: '#aaa'}}>
+              Sin IVA: <strong style={{color: '#d63384'}}>${(invStats?.inventory_value || 0).toLocaleString('es-CL', {maximumFractionDigits:0})}</strong>
           </small>
         </div>
 
-        <div className="kpi-card money shadow">
-          <h3>Valorización Total</h3>
-          <span className="number">${stats.inventory_value.toLocaleString()}</span>
-          <small style={{color: '#aaa'}}>Capital invertido</small>
+        <div 
+            className={`kpi-card shadow clickable ${(invStats?.low_stock || 0) > 0 ? 'alert' : ''}`}
+            onClick={() => setShowStockModal(true)}
+        >
+          <h3>Alerta Stock</h3>
+          <span className="number">{(invStats?.low_stock || 0)}</span>
+          <small style={{color: (invStats?.low_stock || 0) > 0 ? '#ff6b6b' : '#aaa'}}>
+             {(invStats?.low_stock || 0) > 0 ? 'Click para ver detalles' : 'Todo en orden'}
+          </small>
         </div>
       </div>
 
-      {/* 2. ACORDEÓN: GRÁFICO VISUAL */}
-      <div className="accordion-section shadow">
-        <button className="accordion-trigger" onClick={() => toggleSection("chart")}>
-          <span>Visualización de Stock por Producto</span>
-          <span>{activeSection === "chart" ? "▲" : "▼"}</span>
-        </button>
-        
-        {activeSection === "chart" && (
-            <div className="accordion-content chart-container">
-                {products.length > 0 ? (
-                    <Bar options={chartOptions} data={chartData} />
-                ) : (
-                    <p style={{textAlign: 'center', color: '#666'}}>No hay productos para graficar.</p>
-                )}
+      <div className="tabs-header">
+          <button className={`tab-btn ${activeTab === 'sales' ? 'active' : ''}`} onClick={() => setActiveTab('sales')}>🛒 Ventas</button>
+          <button className={`tab-btn ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>📦 Inventario</button>
+      </div>
+
+      <div className="tab-content shadow">
+        {activeTab === 'sales' && (
+            <div className="sales-dashboard-grid animate-fade">
+                <div className="top-products-card">
+                    <div className="card-header-flex">
+                        <h3>🏆 Ranking</h3>
+                        <small>Más vendidos (Mes)</small>
+                    </div>
+                    <div className="ranking-list">
+                        {salesStats?.top_products?.map((prod, index) => (
+                            <div key={index} className="ranking-item">
+                                <div className="rank-info">
+                                    <span className="rank-name">#{index + 1} {prod.name}</span>
+                                    <span className="rank-val">{prod.sold}</span>
+                                </div>
+                                <div className="progress-bg">
+                                    <div className="progress-fill" style={{width: `${(prod.sold / (salesStats.top_products[0].sold || 1)) * 100}%`}}></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="history-container">
+                    <div className="table-header-actions">
+                        <h3>Historial</h3>
+                        <button className="btn-excel" onClick={downloadExcel}>📥 Excel</button>
+                    </div>
+
+                    <div className="filter-buttons">
+                        <button className={`filter-btn ${timeFilter === 'recent' ? 'active' : ''}`} onClick={() => setTimeFilter('recent')}>Recientes</button>
+                        <button className={`filter-btn ${timeFilter === 'daily' ? 'active' : ''}`} onClick={() => setTimeFilter('daily')}>Hoy</button>
+                        <button className={`filter-btn ${timeFilter === 'weekly' ? 'active' : ''}`} onClick={() => setTimeFilter('weekly')}>Semanal</button>
+                        <button className={`filter-btn ${timeFilter === 'monthly' ? 'active' : ''}`} onClick={() => setTimeFilter('monthly')}>Mensual</button>
+                    </div>
+
+                    <div className="table-responsive">
+                        <table className="custom-table">
+                            <thead>
+                                <tr><th>ID</th><th>Fecha</th><th>Total</th><th>Estado</th></tr>
+                            </thead>
+                            <tbody>
+                                {salesStats?.sales_history.map(sale => (
+                                    <tr key={sale.id}>
+                                        <td>#{sale.id}</td>
+                                        <td>{formatDate(sale.date)}</td>
+                                        <td className="amount-col">${sale.total.toLocaleString('es-CL')}</td>
+                                        <td><span className="badge-success">Pagado</span></td>
+                                    </tr>
+                                ))}
+                                {(!salesStats?.sales_history || salesStats.sales_history.length === 0) && (
+                                    <tr><td colSpan={4} className="empty-msg">No hay ventas en este periodo.</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {activeTab === 'inventory' && (
+            <div className="animate-fade">
+                <div className="chart-container">
+                     <Bar options={chartOptions} data={chartData} />
+                </div>
+                <h3 className="section-title">Movimientos Recientes</h3>
+                <div className="table-responsive">
+                    <table className="custom-table">
+                        <thead>
+                            <tr><th>Producto</th><th>Tipo</th><th>Cant.</th><th>Fecha</th></tr>
+                        </thead>
+                        <tbody>
+                            {invStats?.recent_movements.map((mov, i) => (
+                                <tr key={i}>
+                                    <td className="bold-text">{mov.product}</td>
+                                    <td><span className={`tag ${mov.type}`}>{mov.type === 'suma' ? 'Entrada' : mov.type === 'resta' || mov.type === 'venta' ? 'Salida' : 'Ajuste'}</span></td>
+                                    <td>{mov.quantity}</td>
+                                    <td>{formatDate(mov.date)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         )}
       </div>
 
-      {/* 3. ACORDEÓN: HISTORIAL DETALLADO */}
-      <div className="accordion-section shadow">
-        <button className="accordion-trigger" onClick={() => toggleSection("history")}>
-          <span>Últimos Movimientos de Inventario</span>
-          <span>{activeSection === "history" ? "▲" : "▼"}</span>
-        </button>
-
-        {activeSection === "history" && (
-            <div className="accordion-content recent-activity">
-                <table className="activity-table">
-                <thead>
-                    <tr>
-                    <th>Producto</th>
-                    <th>Tipo</th>
-                    <th>Cant.</th>
-                    <th>Fecha</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {stats.recent_movements.length === 0 ? (
-                    <tr><td colSpan={4} style={{textAlign: 'center', padding: '20px'}}>Sin actividad reciente</td></tr>
+      {showStockModal && (
+        <div className="modal-overlay" onClick={() => setShowStockModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h3>Productos Críticos (Stock &lt; 5)</h3>
+                    <button className="btn-close" onClick={() => setShowStockModal(false)}>×</button>
+                </div>
+                <div className="modal-body">
+                    {lowStockItems.length === 0 ? (
+                        <p style={{textAlign:'center', color:'#aaa', padding:'20px'}}>
+                            ¡Excelente! Todo el inventario está saludable.
+                        </p>
                     ) : (
-                    stats.recent_movements.map((mov: any, index) => (
-                        <tr key={index}>
-                        <td style={{fontWeight: 'bold', color: 'white'}}>{mov.product}</td>
-                        <td>
-                            <span className={`tag ${mov.type}`}>
-                            {mov.type === 'suma' ? 'Entrada' : mov.type === 'resta' ? 'Salida' : 'Ajuste'}
-                            </span>
-                        </td>
-                        <td>{mov.quantity}</td>
-                        <td style={{color: '#aaa', fontSize: '0.85rem'}}>
-                            {new Date(mov.date).toLocaleDateString()}
-                        </td>
-                        </tr>
-                    ))
+                        lowStockItems.map(p => (
+                            <div key={p.id} className="low-stock-item">
+                                <span style={{color: '#fff', fontWeight:500}}>{p.name}</span>
+                                <span className="stock-badge-alert">Quedan: {p.stock}</span>
+                            </div>
+                        ))
                     )}
-                </tbody>
-                </table>
+                </div>
             </div>
-        )}
-      </div>
+        </div>
+      )}
 
     </div>
   );

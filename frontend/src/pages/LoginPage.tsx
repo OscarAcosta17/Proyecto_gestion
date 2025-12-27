@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/LoginPage.css';
+import AboutModal from '../components/AboutModal'; // <--- 1. IMPORTAR
+import infoIcon from '../assets/image.png';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   
-  // Estado para los datos
+  // --- 2. ESTADO PARA EL POPUP ---
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
+
+  // Estado para los datos del formulario
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -16,9 +21,7 @@ const LoginPage = () => {
     address: ''
   });
 
-  // NUEVO: Estado para controlar qué campos tienen error
   const [errors, setErrors] = useState<any>({});
-  // NUEVO: Estado para mostrar el mensaje global de error
   const [globalError, setGlobalError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,25 +29,19 @@ const LoginPage = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
-
-    // Si el usuario empieza a escribir en un campo rojo, quitamos el error
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: false });
     }
-    // También limpiamos el mensaje global si escribe
     if (globalError) setGlobalError('');
   };
 
-  // --- FUNCIÓN DE VALIDACIÓN MANUAL ---
   const validateForm = () => {
     let newErrors: any = {};
     let isValid = true;
 
-    // 1. Validar Email y Password (siempre obligatorios)
     if (!formData.email.trim()) newErrors.email = true;
     if (!formData.password.trim()) newErrors.password = true;
 
-    // 2. Validar campos extra SOLO si es Registro
     if (!isLogin) {
       if (!formData.first_name.trim()) newErrors.first_name = true;
       if (!formData.last_name.trim()) newErrors.last_name = true;
@@ -52,23 +49,17 @@ const LoginPage = () => {
       if (!formData.address.trim()) newErrors.address = true;
     }
 
-    // Si hay algún error...
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setGlobalError('Por favor, completa los campos marcados en rojo.');
       isValid = false;
     }
-
     return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    // --- PASO 1: VALIDAR ANTES DE ENVIAR ---
-    if (!validateForm()) {
-      return; // Si falla, no hacemos el fetch
-    }
+    if (!validateForm()) return;
 
     const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
     const endpoint = isLogin ? '/login' : '/register';
@@ -110,9 +101,24 @@ const LoginPage = () => {
 
   return (
     <div className="login-container">
+      
+      {/* --- 3. COMPONENTE MODAL --- */}
+      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+
       <div className="login-card">
         
+        {/* LADO IZQUIERDO (VISUAL) */}
         <div className="login-visual">
+          
+          {/* --- 4. BOTÓN MINI INFO (EN LA ESQUINA) --- */}
+          <button 
+            className="visual-info-btn" 
+            onClick={() => setIsAboutOpen(true)}
+            title="Acerca del proyecto"
+          >
+            <img src={infoIcon} alt="Info" className="btn-icon-img" />
+          </button>
+
           <div className="visual-icon">📦</div>
           <h2>Sistema de Gestión</h2>
           <p>
@@ -122,38 +128,31 @@ const LoginPage = () => {
           </p>
         </div>
 
+        {/* LADO DERECHO (FORMULARIO) */}
         <div className="login-form-section">
           <h1>{isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}</h1>
           
-          {/* MENSAJE DE ERROR GLOBAL (Aparece si faltan campos o falla el login) */}
           {globalError && (
             <div className="form-error-msg">
                {globalError}
             </div>
           )}
           
-          {/* Quitamos 'noValidate' para usar nuestra validación */}
           <form onSubmit={handleSubmit} noValidate>
             
             {!isLogin && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                 <div className="form-group">
                   <input 
-                    type="text" 
-                    name="first_name" 
-                    placeholder="Nombre" 
-                    value={formData.first_name} 
-                    onChange={handleChange} 
-                    className={errors.first_name ? 'input-error' : ''} // <--- Clase Condicional
+                    type="text" name="first_name" placeholder="Nombre" 
+                    value={formData.first_name} onChange={handleChange} 
+                    className={errors.first_name ? 'input-error' : ''} 
                   />
                 </div>
                 <div className="form-group">
                   <input 
-                    type="text" 
-                    name="last_name" 
-                    placeholder="Apellido" 
-                    value={formData.last_name} 
-                    onChange={handleChange} 
+                    type="text" name="last_name" placeholder="Apellido" 
+                    value={formData.last_name} onChange={handleChange} 
                     className={errors.last_name ? 'input-error' : ''}
                   />
                 </div>
@@ -164,21 +163,15 @@ const LoginPage = () => {
               <>
                  <div className="form-group">
                   <input 
-                    type="text" 
-                    name="phone" 
-                    placeholder="Teléfono / Celular" 
-                    value={formData.phone} 
-                    onChange={handleChange} 
+                    type="text" name="phone" placeholder="Teléfono / Celular" 
+                    value={formData.phone} onChange={handleChange} 
                     className={errors.phone ? 'input-error' : ''}
                   />
                 </div>
                 <div className="form-group">
                   <input 
-                    type="text" 
-                    name="address" 
-                    placeholder="Dirección Completa" 
-                    value={formData.address} 
-                    onChange={handleChange} 
+                    type="text" name="address" placeholder="Dirección Completa" 
+                    value={formData.address} onChange={handleChange} 
                     className={errors.address ? 'input-error' : ''}
                   />
                 </div>
@@ -187,28 +180,22 @@ const LoginPage = () => {
 
             <div className="form-group">
               <input 
-                type="email" 
-                name="email" 
-                placeholder="Correo Electrónico" 
-                value={formData.email} 
-                onChange={handleChange} 
+                type="email" name="email" placeholder="Correo Electrónico" 
+                value={formData.email} onChange={handleChange} 
                 className={errors.email ? 'input-error' : ''}
               />
             </div>
             
             <div className="form-group">
               <input 
-                type="password" 
-                name="password" 
-                placeholder="Contraseña" 
-                value={formData.password} 
-                onChange={handleChange} 
+                type="password" name="password" placeholder="Contraseña" 
+                value={formData.password} onChange={handleChange} 
                 className={errors.password ? 'input-error' : ''}
               />
             </div>
 
             <button type="submit" className="btn-login">
-              {isLogin ? 'Ingresar ➜' : 'Registrarse ✨'}
+              {isLogin ? 'Ingresar' : 'Registrarse'}
             </button>
           </form>
 
@@ -217,7 +204,7 @@ const LoginPage = () => {
             <button 
               onClick={() => {
                 setIsLogin(!isLogin);
-                setErrors({}); // Limpiar errores al cambiar de pestaña
+                setErrors({});
                 setGlobalError('');
               }} 
               className="toggle-btn"

@@ -7,6 +7,7 @@ import InventoryPage from './pages/InventoryPage';
 import SupportPage from './pages/SupportPage';
 import ConfigurationPage from './pages/ConfigurationPage';
 import StatsPage from './pages/StatsPage';
+import SalesPage from './pages/SalesPage';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/support" element={<SupportPage />} />
         <Route path="/configuration" element={<ConfigurationPage />} />
         <Route path="/stats" element={<StatsPage />} />
+        <Route path="/sales" element={<SalesPage />} />
       </Routes>
     </BrowserRouter>
   );

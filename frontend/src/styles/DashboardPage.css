@@ -178,3 +178,25 @@ body {
     text-align: center;
   }
 }
+
+.btn-info {
+  background: transparent;
+  color: #3498db; /* Color celeste base */
+  border: 1px solid #3498db;
+  padding: 10px 20px;
+  border-radius: 20px; /* Mismo radio que el botón de salir */
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Efecto al pasar el mouse (Hover) */
+.btn-info:hover {
+  background: #3498db; /* Fondo celeste */
+  color: white;        /* Texto blanco */
+  box-shadow: 0 0 15px rgba(52, 152, 219, 0.5); /* Brillo celeste */
+  transform: translateY(-2px);
+}
