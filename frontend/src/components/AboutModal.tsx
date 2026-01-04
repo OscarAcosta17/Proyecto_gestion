@@ -10,12 +10,12 @@ interface Props {
 const slides = [
   {
     icon: "🚀",
-    title: "Gestión Integral v2.0",
+    title: "Gestión Integral",
     text: "Bienvenido a la evolución de tu negocio. Hemos integrado inventario, ventas y finanzas en una sola plataforma oscura, moderna y optimizada para la velocidad."
   },
   {
     icon: "🛒",
-    title: "Punto de Venta (POS)",
+    title: "Punto de Venta",
     text: "Vende sin fricción. Agrega productos al carrito visualmente, calcula vueltos automáticos y cierra ventas en segundos. Una experiencia fluida tanto en PC como en celular."
   },
   {

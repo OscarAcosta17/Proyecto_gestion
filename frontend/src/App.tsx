@@ -8,6 +8,8 @@ import SupportPage from './pages/SupportPage';
 import ConfigurationPage from './pages/ConfigurationPage';
 import StatsPage from './pages/StatsPage';
 import SalesPage from './pages/SalesPage';
+import AdminDashboard from './pages/AdminDashboard';
+
 
 function App() {
   return (
@@ -24,6 +26,7 @@ function App() {
         <Route path="/configuration" element={<ConfigurationPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/sales" element={<SalesPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );

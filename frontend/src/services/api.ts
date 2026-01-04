@@ -53,3 +53,78 @@ export const updateStock = async (data: {
   }
   return await response.json();
 };
+
+export const createTicket = async (data: { user_id: number; issue_type: string; message: string }) => {
+  return request('/tickets', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+};
+
+// ==========================================
+//           FUNCIONES DE ADMIN
+// ==========================================
+
+// 1. Obtener todos los usuarios
+export const getAllUsers = async () => {
+  return request('/admin/users');
+};
+
+// 2. Obtener estadísticas globales (KPIs del Admin)
+export const getAdminStats = async () => {
+  return request('/admin/stats');
+};
+
+// 3. Obtener tickets de soporte
+export const getAdminTickets = async () => {
+  return request('/admin/tickets');
+};
+
+// 4. Resolver un ticket
+export const closeTicket = async (id: number, message: string) => {
+  return request(`/admin/tickets/${id}/close`, {
+    method: 'PUT',
+    body: JSON.stringify({ response_text: message }) // Enviamos el JSON
+  });
+};
+
+export const getMyTickets = async () => {
+  return request('/my-tickets');
+};
+
+export const createAnnouncement = async (title: string, message: string) => {
+  return request('/admin/announce', {
+    method: 'POST',
+    body: JSON.stringify({ title, message })
+  });
+};
+
+// Leer anuncios (Todos)
+export const getAnnouncements = async () => {
+  return request('/announcements');
+};
+
+export const getAllProductsGlobal = async () => {
+  return request('/admin/products');
+};
+
+// En src/services/api.ts
+
+// Función genérica para editar datos del producto (Precios, Nombre, etc.)
+export const updateProduct = async (id: number, productData: any) => {
+  // Asegúrate de que la URL coincida con tu backend (puede ser /products/{id} o /products/{barcode})
+  const response = await fetch(`${API_URL}/products/${id}`, {
+    method: 'PUT', // O 'PATCH' dependiendo de tu backend
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(productData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Error al actualizar el producto');
+  }
+
+  return await response.json();
+};

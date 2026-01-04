@@ -12,12 +12,15 @@ class User(Base):
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
 
+    is_admin = Column(Boolean, default=False)
+
     first_name = Column(String, nullable=True) # Nombre
     last_name = Column(String, nullable=True)  # Apellido
     phone = Column(String, nullable=True)      # Teléfono
     address = Column(String, nullable=True)    # Dirección
     products = relationship("Product", back_populates="owner")
     sales = relationship("Sale", back_populates="user")
+    tickets = relationship("SupportTicket", back_populates="user")
 
 # --- TABLA DE PRODUCTOS (Tu nueva tabla) ---
 class Product(Base):
@@ -41,6 +44,9 @@ class SupportTicket(Base):
     issue_type = Column(String)
     message = Column(String)
     status = Column(String, default="pendiente")
+    admin_response = Column(String, nullable=True)
+
+    user = relationship("User", back_populates="tickets")
 
 # --- 4. HISTORIAL DE MOVIMIENTOS (La que faltaba) ---
 class MovementHistory(Base):
@@ -75,9 +81,18 @@ class SaleItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     sale_id = Column(Integer, ForeignKey("sales.id"))
     product_id = Column(Integer, ForeignKey("products.id"))
+    cost_price = Column(Float)
     
     quantity = Column(Integer)      # Cuántos se llevó
     unit_price = Column(Integer)    # A qué precio se vendió en ese momento
     
     sale = relationship("Sale", back_populates="items")
     product = relationship("Product")
+
+class GlobalMessage(Base):
+    __tablename__ = "global_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)  # Ej: "Mantenimiento Programado"
+    message = Column(String) # Ej: "El sistema se actualizará el viernes..."
+    created_at = Column(DateTime, default=datetime.now)

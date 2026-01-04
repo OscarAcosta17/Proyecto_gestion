@@ -3,10 +3,10 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional  # <--- CORRECCIÓN 1: Agregado Optional
 from jose import jwt, JWTError
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime, timedelta # <--- IMPORTANTE: timedelta agregado
+from datetime import datetime, timedelta 
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from sqlalchemy import extract
@@ -14,8 +14,10 @@ import csv
 import io
 from fastapi.responses import StreamingResponse
 
+# --- CORRECCIÓN 2: Importar models explícitamente para evitar error "models not defined" ---
+from . import models 
 from .database import engine, Base, get_db
-from .models import User, Product, SupportTicket, MovementHistory, Sale, SaleItem
+from .models import User, Product, SupportTicket, MovementHistory, Sale, SaleItem, GlobalMessage
 from .security import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM
 from .schemas import SaleCreate, SaleResponse
 
@@ -39,6 +41,12 @@ class ProductCreate(BaseModel):
     stock: int
     cost_price: float
     sale_price: float
+
+# --- CORRECCIÓN 3: Schema para actualizar precios ---
+class ProductUpdate(BaseModel):
+    cost_price: Optional[float] = None
+    sale_price: Optional[float] = None
+    name: Optional[str] = None
 
 class ProductResponse(ProductCreate):
     id: int
@@ -69,6 +77,13 @@ class UserRegisterSchema(BaseModel):
     phone: str
     address: str
 
+class TicketResolveSchema(BaseModel):
+    response_text: str
+
+class AnnouncementCreate(BaseModel):
+    title: str
+    message: str
+
 # ==========================================
 #         AUTENTICACIÓN
 # ==========================================
@@ -92,9 +107,107 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
+def get_current_admin(current_user: User = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Se requieren privilegios de administrador"
+        )
+    return current_user
+
 # ==========================================
-#             ENDPOINTS USUARIO/AUTH
+#         ENDPOINTS DE ADMINISTRADOR
 # ==========================================
+
+@app.get("/admin/stats")
+def get_admin_stats(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    total_users = db.query(User).count()
+    total_sales = db.query(Sale).count()
+    total_products = db.query(Product).count()
+    total_revenue = db.query(func.sum(Sale.total_amount)).scalar() or 0
+    
+    return {
+        "total_users": total_users,
+        "total_sales": total_sales,
+        "total_products": total_products,
+        "platform_revenue": total_revenue
+    }
+
+@app.get("/admin/users")
+def get_all_users(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    users = db.query(User).all()
+    return [
+        {
+            "id": u.id, 
+            "email": u.email, 
+            "first_name": u.first_name,
+            "last_name": u.last_name, 
+            "phone": u.phone,
+            "is_admin": u.is_admin,
+            "is_active": True # Pendiente implementar campo is_active en DB
+        } 
+        for u in users
+    ]
+
+# --- CORRECCIÓN 4: Endpoint faltante para el Admin Dashboard (Inventario Global) ---
+@app.get("/admin/products")
+def get_all_products_global(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    products = db.query(Product).all()
+    data = []
+    for p in products:
+        owner_name = f"{p.owner.first_name} {p.owner.last_name}" if p.owner else "Desconocido"
+        data.append({
+            "id": p.id,
+            "barcode": p.barcode,
+            "name": p.name,
+            "stock": p.stock,
+            "owner": owner_name
+        })
+    return data
+
+@app.get("/admin/tickets")
+def get_all_tickets(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    tickets = db.query(SupportTicket).all()
+    data = []
+    for t in tickets:
+        user_email = t.user.email if t.user else "Usuario eliminado"
+        data.append({
+            "id": t.id,
+            "user": user_email,
+            "issue": t.issue_type,
+            "message": t.message,
+            "status": t.status,
+            "admin_response": t.admin_response
+        })
+    return data
+
+@app.put("/admin/tickets/{ticket_id}/close")
+def close_ticket(
+    ticket_id: int, 
+    resolve_data: TicketResolveSchema, 
+    db: Session = Depends(get_db), 
+    admin: User = Depends(get_current_admin)
+):
+    ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    
+    ticket.status = "closed"
+    ticket.admin_response = resolve_data.response_text
+    db.commit()
+    return {"message": "Ticket cerrado y respuesta guardada"}
+
+@app.post("/admin/announce")
+def create_announcement(data: AnnouncementCreate, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    new_msg = GlobalMessage(title=data.title, message=data.message)
+    db.add(new_msg)
+    db.commit()
+    return {"message": "Anuncio global enviado"}
+
+# ==========================================
+#            ENDPOINTS USUARIO/AUTH
+# ==========================================
+
 @app.post("/register")
 def register_user(user_data: UserRegisterSchema, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user_data.email).first()
@@ -128,7 +241,8 @@ def login(user_data: UserLoginSchema, db: Session = Depends(get_db)):
         "token_type": "bearer",
         "user_id": user.id,
         "email": user.email,
-        "first_name": user.first_name 
+        "first_name": user.first_name,
+        "is_admin": user.is_admin
     }
 
 @app.get("/user/me")
@@ -171,8 +285,9 @@ def delete_account(db: Session = Depends(get_db), current_user: User = Depends(g
     return {"message": "Cuenta eliminada"}
 
 # ==========================================
-#             ENDPOINTS PRODUCTOS
+#            ENDPOINTS PRODUCTOS
 # ==========================================
+
 @app.get("/products", response_model=List[ProductResponse])
 def get_products(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return db.query(Product).filter(Product.user_id == current_user.id).all()
@@ -190,12 +305,12 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db), curren
     db.commit()
     db.refresh(new_product)
 
-    # 3. --- NUEVO: SI HAY STOCK INICIAL, GUARDAR EN HISTORIAL ---
+    # 3. SI HAY STOCK INICIAL, GUARDAR EN HISTORIAL
     if new_product.stock > 0:
         initial_movement = MovementHistory(
             product_id=new_product.id,
             user_id=current_user.id,
-            movement_type="suma",       # Tipo "suma" para que aparezca como entrada
+            movement_type="suma", 
             quantity_changed=new_product.stock,
             final_stock=new_product.stock
         )
@@ -203,6 +318,26 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db), curren
         db.commit()
 
     return new_product
+
+# --- CORRECCIÓN 5: Endpoint para modificar precios/nombre ---
+@app.put("/products/{product_id}")
+def update_product(product_id: int, product_update: ProductUpdate, db: Session = Depends(get_db)):
+    db_product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    if product_update.cost_price is not None:
+        db_product.cost_price = product_update.cost_price
+    if product_update.sale_price is not None:
+        db_product.sale_price = product_update.sale_price
+    if product_update.name is not None:
+        db_product.name = product_update.name
+
+    db.commit()
+    db.refresh(db_product)
+    
+    return db_product
 
 @app.post("/update-stock")
 def update_stock(update: StockUpdate, db: Session = Depends(get_db)):
@@ -230,13 +365,12 @@ def update_stock(update: StockUpdate, db: Session = Depends(get_db)):
     return {"message": "Stock actualizado"}
 
 # ==========================================
-#             VENTAS (SALES)
+#              VENTAS (SALES)
 # ==========================================
 
 @app.post("/sales", response_model=SaleResponse)
 def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     
-    # 1. Crear la venta vacía
     new_sale = Sale(user_id=current_user.id, total_amount=0)
     db.add(new_sale)
     db.commit()
@@ -251,27 +385,23 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db), current_us
             if not product:
                 raise HTTPException(status_code=404, detail=f"Producto {item.product_id} no encontrado")
             
-            # Validar stock
             if product.stock < item.quantity:
                 raise HTTPException(status_code=400, detail=f"Stock insuficiente para {product.name}")
 
-            # Calcular subtotal
             subtotal = product.sale_price * item.quantity 
             total_sale_amount += subtotal
 
-            # Guardar el detalle
             sale_item = SaleItem(
                 sale_id=new_sale.id,
                 product_id=product.id,
                 quantity=item.quantity,
-                unit_price=product.sale_price 
+                unit_price=product.sale_price,
+                cost_price=product.cost_price
             )
             db.add(sale_item)
 
-            # Restar stock
             product.stock -= item.quantity
             
-            # Guardar en historial
             history = MovementHistory(
                 product_id=product.id,
                 movement_type="venta", 
@@ -281,7 +411,6 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db), current_us
             )
             db.add(history)
 
-        # Actualizar total
         new_sale.total_amount = total_sale_amount
         db.commit()
         db.refresh(new_sale)
@@ -294,7 +423,7 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db), current_us
         raise e
 
 # ==========================================
-#        DASHBOARD / ESTADÍSTICAS
+#          DASHBOARD / ESTADÍSTICAS
 # ==========================================
 
 @app.get("/dashboard/stats")
@@ -332,6 +461,7 @@ def get_dashboard_stats(db: Session = Depends(get_db), current_user: User = Depe
         "recent_movements": movements_data
     }
 
+# --- ESTA ES LA FUNCIÓN QUE FALTABA Y QUE RECUPERAMOS ---
 @app.get("/sales/stats")
 def get_sales_statistics(
     range: str = "recent", 
@@ -340,12 +470,10 @@ def get_sales_statistics(
 ):
     now = datetime.now()
     
-    # 1. Definir fechas base
     start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     start_of_week = start_of_day - timedelta(days=start_of_day.weekday())
 
-    # 2. KPIs Generales
     sales_today = db.query(func.sum(Sale.total_amount)).filter(
         Sale.user_id == current_user.id,
         Sale.date >= start_of_day
@@ -356,22 +484,19 @@ def get_sales_statistics(
         Sale.date >= start_of_month
     ).scalar() or 0
 
-    # Ganancia del MES (Venta - Costo)
     month_profit = db.query(
-        func.sum((SaleItem.unit_price - Product.cost_price) * SaleItem.quantity)
+        func.sum((SaleItem.unit_price - func.coalesce(SaleItem.cost_price, Product.cost_price)) * SaleItem.quantity)
     ).join(Product).join(Sale).filter(
         Sale.user_id == current_user.id,
         Sale.date >= start_of_month
     ).scalar() or 0
 
-    # NUEVO: Ganancia TOTAL HISTÓRICA (Sin filtro de fecha)
     total_profit = db.query(
-        func.sum((SaleItem.unit_price - Product.cost_price) * SaleItem.quantity)
+        func.sum((SaleItem.unit_price - func.coalesce(SaleItem.cost_price, Product.cost_price)) * SaleItem.quantity)
     ).join(Product).join(Sale).filter(
         Sale.user_id == current_user.id
     ).scalar() or 0
 
-    # 3. Lógica del Historial
     history_query = db.query(Sale).filter(
         Sale.user_id == current_user.id
     ).order_by(Sale.date.desc())
@@ -395,7 +520,6 @@ def get_sales_statistics(
             "items_count": item_count
         })
 
-    # 4. Top Productos
     top_products_query = db.query(
         Product.name,
         func.sum(SaleItem.quantity).label("total_sold")
@@ -410,59 +534,73 @@ def get_sales_statistics(
         "today_income": sales_today,
         "month_income": sales_month,
         "month_profit": month_profit, 
-        "total_profit": total_profit, # <--- Enviamos el nuevo dato
+        "total_profit": total_profit,
         "sales_history": history,
         "top_products": top_products
     }
-# --- NUEVO ENDPOINT: EXPORTAR A EXCEL REAL (.XLSX) ---
+
 @app.get("/sales/export")
 def export_sales_excel(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     sales = db.query(Sale).filter(Sale.user_id == current_user.id).order_by(Sale.date.desc()).all()
 
-    # 1. Crear un libro de Excel real
     wb = Workbook()
     ws = wb.active
     ws.title = "Reporte de Ventas"
 
-    # 2. Encabezados
     headers = ["ID Venta", "Fecha", "Total", "Productos"]
     ws.append(headers)
 
-    # Estilo: Negrita para los encabezados
     for cell in ws[1]:
         cell.font = Font(bold=True)
 
-    # 3. Llenar filas
     for sale in sales:
-        # Formato lista productos: "Catnip (2) + Caja (1)"
         items_list = []
         for item in sale.items:
             items_list.append(f"{item.product.name} ({item.quantity})")
         items_str = " + ".join(items_list)
         
-        # Escribir fila
         ws.append([
             sale.id,
-            sale.date.strftime("%d/%m/%Y %H:%M:%S"), # Fecha legible
+            sale.date.strftime("%d/%m/%Y %H:%M:%S"), 
             sale.total_amount,
             items_str
         ])
 
-    # 4. --- MAGIA: AJUSTAR ANCHO DE COLUMNAS ---
-    # Ajustamos el ancho para que la fecha (Columna B) no salga con #####
-    ws.column_dimensions['A'].width = 10  # ID
-    ws.column_dimensions['B'].width = 22  # Fecha (Aquí arreglamos el ###)
-    ws.column_dimensions['C'].width = 15  # Total
-    ws.column_dimensions['D'].width = 50  # Productos (Bien ancha para que se lea)
+    ws.column_dimensions['A'].width = 10 
+    ws.column_dimensions['B'].width = 22 
+    ws.column_dimensions['C'].width = 15 
+    ws.column_dimensions['D'].width = 50 
 
-    # 5. Guardar en memoria
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
 
-    # 6. Retornar archivo Excel
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=reporte_ventas.xlsx"}
     )
+
+@app.post("/tickets")
+def create_ticket(ticket: TicketCreate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == ticket.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    new_ticket = SupportTicket(
+        user_id=ticket.user_id,
+        issue_type=ticket.issue_type,
+        message=ticket.message,
+        status="open" 
+    )
+    db.add(new_ticket)
+    db.commit()
+    return {"message": "Ticket creado exitosamente"}
+
+@app.get("/my-tickets")
+def get_my_tickets(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return db.query(SupportTicket).filter(SupportTicket.user_id == current_user.id).order_by(SupportTicket.id.desc()).all()
+
+@app.get("/announcements")
+def get_announcements(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return db.query(GlobalMessage).order_by(GlobalMessage.created_at.desc()).limit(5).all()

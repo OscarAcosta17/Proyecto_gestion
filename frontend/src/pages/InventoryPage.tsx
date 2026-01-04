@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { getProducts, createProduct, updateStock } from "../services/api";
+// IMPORTANTE: Asegúrate de que updateProduct esté en tu api.ts
+import { getProducts, createProduct, updateStock, updateProduct } from "../services/api";
 import BarcodeScanner from "../components/BarcodeScanner";
 import { exportToExcel, exportToPDF } from "../components/exportUtils"; 
 import "../styles/InventoryPage.css"; 
@@ -21,23 +22,26 @@ const InventoryPage = () => {
   const [scannerActive, setScannerActive] = useState(false);
   
   // UI States
-  const [showForm, setShowForm] = useState(false); // SOLO ESTE ES DESPLEGABLE
+  const [showForm, setShowForm] = useState(false); 
   const [showStockModal, setShowStockModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [feedback, setFeedback] = useState<{msg: string, type: 'in' | 'out'} | null>(null);
   
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
-  // Filtros y Ordenamiento (RESTAURADO)
+  // Filtros y Ordenamiento
   const [searchTerm, setSearchTerm] = useState("");
   const [showZeroStock, setShowZeroStock] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
-  // Lógica Modal
+  // Lógica Modal (Stock)
   const [stockMode, setStockMode] = useState<'unit' | 'box'>('unit');
   const [updateType, setUpdateType] = useState<'suma' | 'resta' | 'set'>('suma');
   const [boxDetails, setBoxDetails] = useState({ boxes: 1, unitsPerBox: 1 });
   const [quantityInput, setQuantityInput] = useState(0);
+
+  // --- NUEVO: ESTADO PARA PRECIOS EN EL MODAL ---
+  const [modalPrices, setModalPrices] = useState({ cost: 0, sale: 0 });
 
   const [formData, setFormData] = useState({
     barcode: "", name: "", stock: 0, cost_price: 0, sale_price: 0
@@ -52,7 +56,7 @@ const InventoryPage = () => {
     } catch (error) { console.error(error); }
   };
 
-  // --- LÓGICA DE ORDENAMIENTO (RESTAURADA) ---
+  // --- LÓGICA DE ORDENAMIENTO ---
   const visibleProducts = useMemo(() => {
     let filtered = products;
     if (!showZeroStock) filtered = filtered.filter(p => p.stock > 0);
@@ -62,7 +66,6 @@ const InventoryPage = () => {
       filtered = filtered.filter(p => p.name.toLowerCase().includes(lowerTerm) || p.barcode.includes(lowerTerm));
     }
     
-    // ORDENAMIENTO
     if (sortConfig) {
       filtered.sort((a: any, b: any) => {
         if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -79,7 +82,6 @@ const InventoryPage = () => {
   const calculateTotalQuantity = () => stockMode === 'box' ? boxDetails.boxes * boxDetails.unitsPerBox : quantityInput;
   const showFeedback = (msg: string, type: 'in' | 'out') => { setFeedback({ msg, type }); setTimeout(() => setFeedback(null), 3000); };
 
-  // --- HANDLERS DE ORDENAMIENTO ---
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
@@ -91,39 +93,95 @@ const InventoryPage = () => {
     return sortConfig.direction === 'asc' ? ' ▲' : ' ▼';
   };
 
+  // --- ABRIR MODAL Y CARGAR DATOS ---
+  const openAdjustModal = (product: Product) => {
+      setSelectedProduct(product);
+      setUpdateType('suma');
+      setStockMode('unit');
+      setQuantityInput(0);
+      setBoxDetails({ boxes: 1, unitsPerBox: 1 });
+      
+      // Cargar precios actuales para editar
+      setModalPrices({ 
+          cost: product.cost_price, 
+          sale: product.sale_price 
+      });
+      
+      setShowStockModal(true);
+  };
+
   const handleScan = (code: string) => {
     setScannerActive(false);
     const existing = products.find(p => p.barcode === code);
     if (existing) { 
-        setSelectedProduct(existing); setUpdateType('suma'); setStockMode('unit'); setQuantityInput(0); setShowStockModal(true); 
+        openAdjustModal(existing); 
     } else { 
         if(window.confirm("Código nuevo. ¿Crear?")) { 
             setFormData(p => ({...p, barcode: code})); 
-            setShowForm(true); // Abrimos el formulario automáticamente
+            setShowForm(true); 
         } 
     }
   };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // VALIDACIÓN: Campos obligatorios
+    if (!formData.barcode.trim() || !formData.name.trim()) { 
+        showFeedback("❌ El código y nombre son obligatorios.", 'out'); 
+        return; 
+    }
+    // VALIDACIÓN: Precios > 0
+    if (formData.cost_price <= 0 || formData.sale_price <= 0) { 
+        showFeedback("❌ Los precios deben ser mayores a 0.", 'out'); 
+        return; 
+    }
+
     let finalStock = formData.stock;
     if (stockMode === 'box') finalStock = boxDetails.boxes * boxDetails.unitsPerBox;
+    
     try { 
         await createProduct({ ...formData, stock: finalStock }); 
-        showFeedback("Producto creado", 'in'); 
+        showFeedback("✅ Producto creado", 'in'); 
         setFormData({barcode:"",name:"",stock:0,cost_price:0,sale_price:0}); 
         loadProducts(); 
     } catch (error: any) { showFeedback(error.message, 'out'); }
   };
 
+  // --- LOGICA DUAL: STOCK + PRECIOS ---
   const handleUpdateSubmit = async () => {
     if (!selectedProduct) return;
     const qty = calculateTotalQuantity();
     const userId = Number(localStorage.getItem('userId')) || 0;
-    try { await updateStock({ barcode: selectedProduct.barcode, user_id: userId, movement_type: updateType, quantity: qty }); showFeedback("Stock actualizado", 'in'); setShowStockModal(false); loadProducts(); } catch (error: any) { showFeedback(error.message, 'out'); }
+    
+    try { 
+        // 1. Actualizar Stock (si hay cantidad)
+        if (qty > 0) {
+            await updateStock({ 
+                barcode: selectedProduct.barcode, 
+                user_id: userId, 
+                movement_type: updateType, 
+                quantity: qty 
+            });
+        }
+
+        // 2. Actualizar Precios (si cambiaron)
+        if (modalPrices.cost !== selectedProduct.cost_price || modalPrices.sale !== selectedProduct.sale_price) {
+             await updateProduct(selectedProduct.id, {
+                 cost_price: modalPrices.cost,
+                 sale_price: modalPrices.sale
+             });
+        }
+
+        showFeedback("✅ Producto actualizado", 'in'); 
+        setShowStockModal(false); 
+        loadProducts(); 
+
+    } catch (error: any) { 
+        showFeedback(error.message, 'out'); 
+    }
   };
 
-  // --- RENDERIZADO DE INPUTS ---
   const renderQuantityInputs = (isModal = false) => {
       const wrapperClass = "stock-input-container";
       if (stockMode === 'unit') {
@@ -167,13 +225,11 @@ const InventoryPage = () => {
 
       <div className="grid">
         <div className="left-column">
-          {/* KPIs */}
           <div className="kpi-container">
             <div className="kpi-card green"><span className="kpi-label">Capital</span><span className="kpi-value green-text">${inventoryValue.toLocaleString()}</span></div>
             <div className="kpi-card blue"><span className="kpi-label">Items</span><span className="kpi-value blue-text">{totalItems.toLocaleString()}</span></div>
           </div>
 
-          {/* CARD NUEVO PRODUCTO (DESPLEGABLE) */}
           <div className="card form-card">
             <div className="card-header-interactive" onClick={() => setShowForm(!showForm)}>
                 <div>
@@ -182,7 +238,6 @@ const InventoryPage = () => {
                 </div>
                 <span className="toggle-arrow">{showForm ? '▲' : '▼'}</span>
             </div>
-            
             {showForm && (
                 <form onSubmit={handleCreateSubmit} className="slide-down-animation">
                     <div className="input-group"><label>Código de Barras</label><input value={formData.barcode} onChange={e => setFormData({...formData, barcode: e.target.value})} placeholder="Escanea o escribe..." required /></div>
@@ -191,12 +246,10 @@ const InventoryPage = () => {
                     <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px', marginBottom:'15px'}}>
                         <div className="input-group">
                             <label>Costo $</label>
-                            {/* PLACEHOLDERS RESTAURADOS */}
                             <input type="number" value={formData.cost_price || ''} onChange={e => setFormData({...formData, cost_price: Number(e.target.value)})} placeholder="Ej: 500" />
                         </div>
                         <div className="input-group">
                             <label>Venta $</label>
-                            {/* PLACEHOLDERS RESTAURADOS */}
                             <input type="number" value={formData.sale_price || ''} onChange={e => setFormData({...formData, sale_price: Number(e.target.value)})} placeholder="Ej: 1000" />
                         </div>
                     </div>
@@ -212,13 +265,11 @@ const InventoryPage = () => {
             )}
           </div>
 
-          {/* CARD ESCÁNER (NO DESPLEGABLE) */}
           <div className="card scanner-card">
              <div className="card-header-static">
                  <h3 style={{margin:0, color:'var(--neon-blue)'}}>Escáner Rápido</h3>
                  <small className="card-subtitle">Búsqueda por cámara</small>
              </div>
-
              <div style={{marginTop:'15px'}}>
                  {scannerActive ? (
                      <>
@@ -226,9 +277,7 @@ const InventoryPage = () => {
                         <BarcodeScanner active={scannerActive} onScan={handleScan} />
                         <button onClick={() => setScannerActive(false)} className="btn-danger" style={{marginTop:'10px'}}>Detener</button>
                      </>
-                 ) : (
-                     <button onClick={() => setScannerActive(true)} className="btn-secondary" style={{width:'100%'}}>Activar Cámara</button>
-                 )}
+                 ) : <button onClick={() => setScannerActive(true)} className="btn-secondary" style={{width:'100%'}}>Activar Cámara</button>}
              </div>
           </div>
         </div>
@@ -251,8 +300,8 @@ const InventoryPage = () => {
               <thead>
                 <tr>
                   <th>Código</th>
-                  {/* FILTROS DE ORDENAMIENTO RESTAURADOS */}
                   <th onClick={() => handleSort('name')} style={{cursor:'pointer'}}>Nombre {getSortIcon('name')}</th>
+                  <th onClick={() => handleSort('cost_price')} style={{cursor:'pointer', textAlign:'right'}}>Costo {getSortIcon('cost_price')}</th>
                   <th onClick={() => handleSort('sale_price')} style={{cursor:'pointer', textAlign:'right'}}>Precio {getSortIcon('sale_price')}</th>
                   <th onClick={() => handleSort('stock')} style={{cursor:'pointer', textAlign:'center'}}>Stock {getSortIcon('stock')}</th>
                   <th style={{textAlign:'center'}}>Acción</th>
@@ -263,9 +312,10 @@ const InventoryPage = () => {
                   <tr key={p.id}>
                     <td style={{color:'#888', fontFamily:'monospace'}}>{p.barcode}</td>
                     <td style={{fontWeight:600}}>{p.name}</td>
+                    <td style={{textAlign:'right', color:'#aaa'}}>${p.cost_price.toLocaleString()}</td>
                     <td style={{textAlign:'right'}}>${p.sale_price.toLocaleString()}</td>
                     <td style={{textAlign:'center'}}><span className={`badge ${p.stock<5 ? (p.stock===0?'red':'yellow') : 'green'}`}>{p.stock}</span></td>
-                    <td style={{textAlign:'center'}}><button className="btn-secondary" style={{padding:'6px 12px', fontSize:'0.8rem'}} onClick={() => { setSelectedProduct(p); setUpdateType('suma'); setStockMode('unit'); setShowStockModal(true); }}>Ajustar</button></td>
+                    <td style={{textAlign:'center'}}><button className="btn-secondary" style={{padding:'6px 12px', fontSize:'0.8rem'}} onClick={() => openAdjustModal(p)}>Ajustar</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -278,20 +328,56 @@ const InventoryPage = () => {
         <div className="modal-overlay" onClick={() => setShowStockModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2>{selectedProduct.name}</h2>
+            
+            {/* Header del Modal */}
             <div style={{display:'flex', justifyContent:'space-between', background:'#252525', padding:'15px', borderRadius:'8px', marginBottom:'20px', border:'1px solid #333'}}>
-                <span style={{color:'#aaa'}}>Stock Actual</span><strong style={{fontSize:'1.5rem'}}>{selectedProduct.stock}</strong>
+                <span style={{color:'#aaa', marginTop: '6px'}}>Stock Actual</span><strong style={{fontSize:'1.5rem', marginRight: '20px'}}>{selectedProduct.stock}</strong>
             </div>
-            <div className="modal-tabs">
-              <button className={`tab-option ${updateType === 'suma' ? 'active add' : ''}`} onClick={() => setUpdateType('suma')}>+ Entrada</button>
-              <button className={`tab-option ${updateType === 'resta' ? 'active sub' : ''}`} onClick={() => setUpdateType('resta')}>- Salida</button>
-              <button className={`tab-option ${updateType === 'set' ? 'active set' : ''}`} onClick={() => setUpdateType('set')}>= Corregir</button>
+
+            {/* --- SECCIÓN DE EDICIÓN DE PRECIOS --- */}
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px', background: '#1e1e1e', padding: '15px', borderRadius: '10px', border: '1px solid #333'}}>
+                <div style={{display:'flex', flexDirection:'column'}}>
+                    <label style={{fontSize:'0.8rem', color:'#aaa', marginBottom:'5px'}}>Costo ($)</label>
+                    <input 
+                        type="number" 
+                        style={{background:'#111', border:'1px solid #444', padding:'8px', color:'white', borderRadius:'10px'}}
+                        value={modalPrices.cost} 
+                        onChange={e => setModalPrices({...modalPrices, cost: Number(e.target.value)})}
+                    />
+                </div>
+                <div style={{display:'flex', flexDirection:'column'}}>
+                    <label style={{fontSize:'0.8rem', color:'#aaa', marginBottom:'5px'}}>Venta ($)</label>
+                    <input 
+                        type="number" 
+                        style={{background:'#111', border:'1px solid #444', padding:'8px', color:'white', borderRadius:'10px'}}
+                        value={modalPrices.sale} 
+                        onChange={e => setModalPrices({...modalPrices, sale: Number(e.target.value)})}
+                    />
+                </div>
             </div>
+
+            {/* Sección de Stock */}
+            <div className="modal-tabs-container">
+              <div className="modal-tabs">
+                <div className={`tab-glider ${updateType}`}></div>
+                <button 
+                    className={`tab-option ${updateType === 'suma' ? 'active' : ''}`} onClick={() => setUpdateType('suma')}> + Entrada
+                </button>
+                <button 
+                    className={`tab-option ${updateType === 'resta' ? 'active' : ''}`} onClick={() => setUpdateType('resta')}> - Salida
+                </button>
+                <button 
+                    className={`tab-option ${updateType === 'set' ? 'active' : ''}`} onClick={() => setUpdateType('set')}> = Establecer
+                </button>
+              </div>
+            </div>
+            
             
             {renderModeSelector()}
-            
             <div style={{margin:'20px 0'}}>{renderQuantityInputs(true)}</div>
             
             <p style={{color:'#888', marginTop:'15px'}}>El stock cambiará en: <strong>{calculateTotalQuantity()}</strong></p>
+            
             <div className="modal-footer">
               <button className="btn-secondary" onClick={() => setShowStockModal(false)} style={{flex:1}}>Cancelar</button>
               <button className="btn-primary" onClick={handleUpdateSubmit} style={{flex:1}}>Confirmar</button>

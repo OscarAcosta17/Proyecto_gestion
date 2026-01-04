@@ -88,6 +88,12 @@ const LoginPage = () => {
         localStorage.setItem('first_name', data.first_name || '');
         if(data.first_name) localStorage.setItem('userName', data.first_name);
         navigate('/dashboard');
+        localStorage.setItem('isAdmin', String(data.is_admin));
+        if (data.is_admin) {
+            navigate('/admin'); // <--- A la Baticueva 🦇
+        } else {
+            navigate('/dashboard'); // <--- Al trabajo normal 👷
+        }
       } else {
         alert('¡Registro exitoso! Ahora por favor inicia sesión.');
         setFormData({ email: '', password: '', first_name: '', last_name: '', phone: '', address: '' });

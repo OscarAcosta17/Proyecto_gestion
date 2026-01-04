@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/SupportPage.css';
-// Ya no necesitamos customRequired porque haremos la validación manual
-// import { customRequired } from '../components/formUtils'; 
+import { createTicket } from '../services/api'; // <--- Importamos la función correcta
 
 const SupportPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
-  // NUEVO ESTADO: Controla si mostramos el error del mensaje
+  // Controla si mostramos el error del mensaje vacío
   const [showError, setShowError] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -18,6 +17,7 @@ const SupportPage = () => {
     message: ''
   });
 
+  // Cargar datos del usuario al iniciar
   useEffect(() => {
     const savedEmail = localStorage.getItem('userEmail');
     const savedId = localStorage.getItem('userId');
@@ -30,30 +30,27 @@ const SupportPage = () => {
     e.preventDefault();
 
     // --- VALIDACIÓN MANUAL ---
-    // Si el mensaje está vacío (o solo tiene espacios), mostramos error y paramos.
+    // Si el mensaje está vacío, mostramos error y paramos.
     if (!formData.message.trim()) {
       setShowError(true);
-      return; // Detenemos el envío
+      return; 
     }
-    // -------------------------
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/create-ticket', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // --- CORRECCIÓN: Usamos la función del servicio api.ts ---
+      await createTicket({
           user_id: formData.user_id,
           issue_type: formData.issue_type,
           message: formData.message
-        }),
       });
-      if (!response.ok) throw new Error('Error al crear el ticket');
+      
       alert('¡Te hemos escuchado! Tu caso ha sido registrado y lo revisaremos pronto.');
       navigate('/dashboard');
+      
     } catch (error) {
       console.error(error);
-      alert('Hubo un error al conectar con el servidor.');
+      alert('Hubo un error al enviar el ticket. Intenta nuevamente.');
     } finally {
       setLoading(false);
     }
@@ -74,7 +71,6 @@ const SupportPage = () => {
           Cuéntanos tu inconveniente. Tu mensaje llegará directamente a nuestro equipo técnico.
         </p>
 
-        {/* Agregamos 'noValidate' al form para desactivar las burbujas nativas del navegador */}
         <form onSubmit={handleSubmit} noValidate>
           
           <div className="form-group">
@@ -95,7 +91,6 @@ const SupportPage = () => {
             <label>Cuéntanos los detalles *</label>
             <textarea 
               placeholder="Escribe aquí lo que sucedió..." 
-              // Quitamos 'required' y {...customRequired}
               value={formData.message}
               onChange={e => {
                 setFormData({...formData, message: e.target.value});
@@ -103,18 +98,16 @@ const SupportPage = () => {
                 if (showError) setShowError(false);
               }}
               style={{ minHeight: '150px' }}
-              // Si hay error, añadimos la clase CSS que pone el borde rojo
+              // Si hay error, añadimos la clase CSS visual
               className={showError ? 'input-error' : ''}
             />
             
-            {/* --- AQUÍ ESTÁ TU MENSAJE PERSONALIZADO --- */}
-            {/* Solo se muestra si showError es true */}
+            {/* Mensaje de error condicional */}
             {showError && (
               <div className="error-message">
-                 ⚠️ Por favor, detalla tu problema para poder ayudarte.
+                  ⚠️ Por favor, detalla tu problema para poder ayudarte.
               </div>
             )}
-             {/* ----------------------------------------- */}
           </div>
 
           <button type="submit" className="btn-submit" disabled={loading}>

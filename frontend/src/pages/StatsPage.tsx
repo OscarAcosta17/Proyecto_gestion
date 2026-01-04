@@ -156,7 +156,7 @@ export default function StatsPage() {
           <span className="number">${((invStats?.inventory_value || 0) * 1.19).toLocaleString('es-CL', {maximumFractionDigits:0})}</span>
           {/* Aquí agregamos el valor Neto (Sin IVA) */}
           <small style={{color: '#aaa'}}>
-              Sin IVA: <strong style={{color: '#d63384'}}>${(invStats?.inventory_value || 0).toLocaleString('es-CL', {maximumFractionDigits:0})}</strong>
+              Sin IVA: < strong style={{color: '#d63384'}}>${(invStats?.inventory_value || 0).toLocaleString('es-CL', {maximumFractionDigits:0})}</strong>
           </small>
         </div>
 
