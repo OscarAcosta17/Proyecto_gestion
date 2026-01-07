@@ -13,7 +13,7 @@ from sqlalchemy import extract
 import csv
 import io
 from fastapi.responses import StreamingResponse
-
+from .ai import router as ai_router
 # --- CORRECCIÓN 2: Importar models explícitamente para evitar error "models not defined" ---
 from . import models 
 from .database import engine, Base, get_db
@@ -23,6 +23,7 @@ from .schemas import SaleCreate, SaleResponse
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Inventory API")
+app.include_router(ai_router)
 
 app.add_middleware(
     CORSMiddleware,

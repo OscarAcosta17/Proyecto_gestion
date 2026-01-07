@@ -128,3 +128,29 @@ export const updateProduct = async (id: number, productData: any) => {
 
   return await response.json();
 };
+
+
+// En frontend/src/services/api.ts
+
+// Interfaz para la nueva estructura
+interface GeminiRequest {
+  analysis_type: 'general' | 'growth' | 'costs' | 'cash';
+  context_data: any; // Flexible para enviar lo que sea necesario
+}
+
+export const getGeminiAnalysis = async (payload: GeminiRequest) => {
+  const token = localStorage.getItem('token');
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  const response = await fetch(`${API_URL}/api/gemini/analyze`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) throw new Error('Error IA');
+  return await response.json();
+};

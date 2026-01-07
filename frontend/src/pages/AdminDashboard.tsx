@@ -153,8 +153,6 @@ const AdminDashboard = () => {
         </div>
 
         <div className="main-panel">
-            
-            {/* 6. PESTAÑAS PRINCIPALES (Con la nueva de Historial) */}
             <div className="panel-tabs">
                 <button className={`tab-btn ${activeTab === 'tickets' ? 'active' : ''}`} onClick={() => setActiveTab('tickets')}>🎫 Soporte</button>
                 <button className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>👥 Usuarios</button>

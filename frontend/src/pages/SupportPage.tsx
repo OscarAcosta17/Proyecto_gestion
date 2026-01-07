@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/SupportPage.css';
-import { createTicket } from '../services/api'; // <--- Importamos la función correcta
+import '../styles/SupportPage.css'; // Asegúrate de que el nombre coincida
+import { createTicket } from '../services/api'; 
+
+// Icono de flecha simple
+const ArrowLeft = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+);
 
 const SupportPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  
-  // Controla si mostramos el error del mensaje vacío
   const [showError, setShowError] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -17,7 +20,6 @@ const SupportPage = () => {
     message: ''
   });
 
-  // Cargar datos del usuario al iniciar
   useEffect(() => {
     const savedEmail = localStorage.getItem('userEmail');
     const savedId = localStorage.getItem('userId');
@@ -29,8 +31,6 @@ const SupportPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // --- VALIDACIÓN MANUAL ---
-    // Si el mensaje está vacío, mostramos error y paramos.
     if (!formData.message.trim()) {
       setShowError(true);
       return; 
@@ -38,7 +38,6 @@ const SupportPage = () => {
 
     setLoading(true);
     try {
-      // --- CORRECCIÓN: Usamos la función del servicio api.ts ---
       await createTicket({
           user_id: formData.user_id,
           issue_type: formData.issue_type,
@@ -57,64 +56,77 @@ const SupportPage = () => {
   };
 
   return (
-    <div className="support-container">
-      <header className="support-header">
-        <h1>🎧 Centro de Ayuda</h1>
-        <button onClick={() => navigate('/dashboard')} className="btn-back">
-          ⬅ Volver
-        </button>
-      </header>
+    <div className="master-container">
+      {/* --- FONDO ANIMADO --- */}
+      <div className="ambient-glow glow-top-left"></div>
+      <div className="ambient-glow glow-bottom-right"></div>
+      <div className="moving-grid-background">
+        <div className="grid-plane"></div>
+      </div>
 
-      <div className="support-card">
-        <h2 style={{marginTop: 0, fontSize: '1.2rem', color: 'white'}}>¿En qué podemos ayudarte hoy?</h2>
-        <p style={{marginBottom: '25px', color: '#aaa', lineHeight: '1.5'}}>
-          Cuéntanos tu inconveniente. Tu mensaje llegará directamente a nuestro equipo técnico.
-        </p>
-
-        <form onSubmit={handleSubmit} noValidate>
+      <div className="support-layout">
+        <div className="cyber-card support-box">
           
-          <div className="form-group">
-            <label>¿Qué tipo de problema es?</label>
-            <select 
-              value={formData.issue_type}
-              onChange={e => setFormData({...formData, issue_type: e.target.value})}
-            >
-              <option>Error del Sistema</option>
-              <option>Problema con el Inventario</option>
-              <option>Problema con el Escáner</option>
-              <option>Tengo una sugerencia</option>
-              <option>Otro</option>
-            </select>
-          </div>
+          <header className="support-header">
+            <button onClick={() => navigate('/dashboard')} className="btn-icon-back" title="Volver">
+              <ArrowLeft />
+            </button>
+            <div className="header-text">
+                <h1>Centro de Ayuda</h1>
+                <p>Describe tu problema y nuestro equipo lo resolverá.</p>
+            </div>
+          </header>
 
-          <div className="form-group">
-            <label>Cuéntanos los detalles *</label>
-            <textarea 
-              placeholder="Escribe aquí lo que sucedió..." 
-              value={formData.message}
-              onChange={e => {
-                setFormData({...formData, message: e.target.value});
-                // Si el usuario empieza a escribir, ocultamos el error
-                if (showError) setShowError(false);
-              }}
-              style={{ minHeight: '150px' }}
-              // Si hay error, añadimos la clase CSS visual
-              className={showError ? 'input-error' : ''}
-            />
+          <form onSubmit={handleSubmit} className="support-form" noValidate>
             
-            {/* Mensaje de error condicional */}
-            {showError && (
-              <div className="error-message">
-                  ⚠️ Por favor, detalla tu problema para poder ayudarte.
+            <div className="form-group">
+              <label>Tipo de Incidencia</label>
+              <div className="select-wrapper">
+                <select 
+                  value={formData.issue_type}
+                  onChange={e => setFormData({...formData, issue_type: e.target.value})}
+                  className="cyber-select"
+                >
+                  <option>Error del Sistema</option>
+                  <option>Problema con el Inventario</option>
+                  <option>Problema con el Escáner</option>
+                  <option>Tengo una sugerencia</option>
+                  <option>Otro</option>
+                </select>
               </div>
-            )}
-          </div>
+            </div>
 
-          <button type="submit" className="btn-submit" disabled={loading}>
-            {loading ? 'Enviando...' : 'Enviar Mensaje 📨'}
-          </button>
+            <div className="form-group">
+              <label>Detalles del problema</label>
+              <textarea 
+                placeholder="Describe qué sucedió, qué esperabas que pasara, etc..." 
+                value={formData.message}
+                onChange={e => {
+                  setFormData({...formData, message: e.target.value});
+                  if (showError) setShowError(false);
+                }}
+                className={`cyber-textarea ${showError ? 'input-error' : ''}`}
+              />
+              
+              {showError && (
+                <div className="error-badge">
+                    ⚠️ Por favor, escribe un detalle para poder ayudarte.
+                </div>
+              )}
+            </div>
 
-        </form>
+            <div className="form-actions">
+                <button type="button" className="btn-ghost" onClick={() => navigate('/dashboard')}>
+                    Cancelar
+                </button>
+                <button type="submit" className="btn-cyber-submit" disabled={loading}>
+                    {loading ? 'Enviando...' : 'Enviar Ticket'}
+                    <span className="btn-glare"></span>
+                </button>
+            </div>
+
+          </form>
+        </div>
       </div>
     </div>
   );

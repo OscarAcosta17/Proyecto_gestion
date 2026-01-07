@@ -1,399 +1,485 @@
-/* StatsPage.css */
-
-.stats-container {
-  min-height: 100vh;
-  background-color: #121212;
-  color: #e0e0e0;
-  font-family: 'Inter', sans-serif;
-  padding: 20px;
-  animation: fadeIn 0.5s ease-out;
+/* =========================================
+   VARIABLES
+   ========================================= */
+:root {
+  --bg-dark: #050505;
+  --card-bg: rgba(15, 17, 21, 0.85);
+  --primary: #6366f1;
+  --text-main: #ffffff;
+  --text-muted: #9ca3af;
+  --border: rgba(255, 255, 255, 0.1);
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
 }
 
-.loading-container {
-    display: flex; justify-content: center; align-items: center; 
-    height: 100vh; background: #121212; color: #aaa;
+body, html {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  overflow: hidden; background-color: var(--bg-dark);
 }
 
-/* --- HEADER --- */
+.master-container {
+  position: relative; width: 100%; height: 100vh;
+  overflow-y: auto; overflow-x: hidden;
+}
+
+.moving-grid-background {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+}
+
+.grid-plane {
+  position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
+  background-image: linear-gradient(rgba(99, 102, 241, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(99, 102, 241, 0.2) 1px, transparent 1px);
+  background-size: 50px 50px;
+  transform: perspective(500px) rotateX(60deg);
+  animation: gridMove 20s linear infinite;
+  mask-image: linear-gradient(to bottom, transparent 0%, transparent 20%, black 50%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 20%, black 50%);
+}
+
+@keyframes gridMove {
+  0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+  100% { transform: perspective(500px) rotateX(60deg) translateY(50px); }
+}
+
+.ambient-glow {
+  position: fixed; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+  filter: blur(80px); border-radius: 50%; z-index: 0;
+}
+.glow-top-left { top: -200px; left: -200px; }
+.glow-bottom-right { bottom: -200px; right: -200px; background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, transparent 70%); }
+
+.stats-layout {
+  position: relative; z-index: 10; max-width: 1200px; margin: 0 auto; padding: 40px 20px 80px;
+}
+
 .stats-header {
-  background-color: #1e1e1e;
-  padding: 20px;
-  border-radius: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  border: 1px solid #333;
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;
 }
-.stats-header h1 { margin: 0; font-size: 1.5rem; }
-@media (min-width: 768px) { .stats-header h1 { font-size: 1.8rem; } }
-
-.btn-secondary {
-  background: transparent; color: #a0a0a0; border: 1px solid #555;
-  padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
-  white-space: nowrap;
+.header-left { display: flex; align-items: center; gap: 20px; }
+.btn-icon-back {
+  width: 45px; height: 45px; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+  border-radius: 12px; color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: 0.2s;
 }
-.btn-secondary:hover { background: #333; color: white; }
+.btn-icon-back:hover { background: var(--primary); color: white; border-color: var(--primary); }
+.header-text h1 { margin: 0; font-size: 2rem; font-weight: 700; color: white; }
+.header-text p { margin: 5px 0 0; color: var(--text-muted); font-size: 1rem; }
 
-/* --- KPI GRID (RESPONSIVE) --- */
+/* GEMINI CARD */
+.gemini-main-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 27, 75, 0.95));
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 16px; padding: 25px; margin-bottom: 30px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 0 40px rgba(99, 102, 241, 0.1);
+}
+.gemini-main-card::after {
+  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+  background: linear-gradient(90deg, #60a5fa, #c084fc, #f472b6);
+  animation: shimmer 3s infinite linear; background-size: 200% 100%;
+}
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+.gemini-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.ai-badge {
+  display: flex; align-items: center; gap: 8px; font-weight: 700; color: white; font-size: 1.1rem;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.gemini-content-text p { color: #e2e8f0; line-height: 1.6; font-size: 1.05rem; margin: 0; }
+.gemini-spin { animation: spin 4s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* KPI CARDS */
 .kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 40px;
+}
+.kpi-card {
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 25px;
+  display: flex; align-items: flex-start; gap: 15px; transition: transform 0.2s; position: relative; overflow: hidden;
+}
+.kpi-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.2); }
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+.kpi-card.green-glow::before { background: var(--success); }
+.kpi-card.blue-glow::before { background: #3b82f6; }
+.kpi-card.gold-glow::before { background: var(--warning); }
+.kpi-card.red-alert { border-color: var(--danger); box-shadow: 0 0 20px rgba(239, 68, 68, 0.15); cursor: pointer; }
+.kpi-card.red-alert::before { background: var(--danger); }
+.kpi-icon { font-size: 1.8rem; }
+.kpi-content h3 { margin: 0 0 5px; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+.kpi-value { font-size: 1.6rem; font-weight: 700; color: white; margin-bottom: 2px; }
+
+/* TABS */
+.tabs-container-center {
+  display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.tab-pill-large {
+  padding: 12px 40px; background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+  font-weight: 600; font-size: 1rem; border-radius: 50px; cursor: pointer; transition: all 0.3s;
+}
+.tab-pill-large:hover { background: rgba(255, 255, 255, 0.05); color: white; }
+.tab-pill-large.active { background: rgba(99, 102, 241, 0.15); color: var(--primary); border-color: var(--primary); box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+
+/* SPLIT GRID (CHARTS) */
+.charts-split-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;
+}
+.panel-header-mini { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+.metric-info { display: flex; flex-direction: column; }
+.metric-info .label { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px; }
+.metric-info .value { font-size: 1.8rem; font-weight: 700; color: white; }
+.metric-info .value.success { color: #10b981; }
+.metric-info .value.warning { color: #f59e0b; }
+.mini-icon { font-size: 1.5rem; opacity: 0.8; }
+.chart-wrapper-mini { height: 200px; width: 100%; }
+
+/* PANELES GENERALES */
+.sales-view-container, .inventory-view { display: flex; flex-direction: column; gap: 25px; }
+.sales-bottom-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 25px; }
+
+.panel-card {
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 30px;
+  display: flex; flex-direction: column; z-index: 5;
+}
+.panel-header, .panel-header-actions {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;
+}
+.panel-header h3, .panel-header-actions h3 { margin: 0; font-size: 1.2rem; color: white; font-weight: 600; }
+
+/* ESTILOS DE LOS BOTONES DE FILTRO (PILLS) - ARREGLADO */
+.filter-pills {
+  display: flex;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  padding: 3px;
+  border: 1px solid var(--border);
+}
+.filter-pills button {
+  padding: 6px 15px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted); /* Texto gris por defecto */
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.filter-pills button:hover {
+  color: white;
+}
+.filter-pills button.active {
+  background: rgba(255,255,255,0.1); /* Fondo claro sutil al estar activo */
+  color: white; /* Texto blanco al estar activo */
+  font-weight: 600;
+}
+
+/* RANKING & LISTAS */
+.ranking-panel { height: 400px; }
+.ranking-content-flex { display: flex; flex-direction: column; gap: 20px; height: 100%; }
+.doughnut-container { height: 150px; flex-shrink: 0; position: relative; }
+.ranking-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.ranking-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.rank-dot { width: 10px; height: 10px; border-radius: 50%; }
+.rank-info-compact { display: flex; justify-content: space-between; width: 100%; font-size: 0.9rem; color: #e2e8f0; }
+
+.table-responsive-wrapper { overflow-x: auto; }
+.cyber-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.cyber-table th { text-align: left; color: var(--text-muted); font-weight: 500; padding: 15px; border-bottom: 1px solid var(--border); font-size: 0.85rem; text-transform: uppercase; }
+.cyber-table td { padding: 16px 15px; color: white; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.amount { font-weight: 600; color: #10b981; }
+.status-badge.paid { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; background: rgba(16, 185, 129, 0.2); color: #10b981; }
+
+.type-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; text-transform: uppercase; font-weight: 600; }
+.type-badge.suma { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.type-badge.resta, .type-badge.venta { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.date-col { color: var(--text-muted); font-size: 0.85rem; }
+
+.chart-wrapper { height: 350px; width: 100%; position: relative; }
+
+.modal-backdrop {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+  z-index: 1000; display: flex; justify-content: center; align-items: center;
+}
+
+.modal-cyber {
+  background: #0f1014;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  width: 90%;
+  max-width: 450px; /* Tamaño estándar pequeño */
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh; /* Evita que se salga de la pantalla en vertical */
+}
+
+.modal-lg {
+  max-width: 800px !important; /* Mucho más ancho */
+}
+
+.modal-cyber-header {
+  padding: 25px;
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(255,255,255,0.02);
+}
+
+.modal-cyber-header h3 { margin: 0; font-size: 1.2rem; color: white; }
+.modal-cyber-header button { background: none; border: none; color: var(--text-muted); font-size: 1.8rem; cursor: pointer; }
+
+.modal-cyber-body {
+  padding: 30px; /* Un poco más de espacio interno */
+  overflow-y: auto;
+}
+.cash-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.cash-table th { text-align: left; color: #9ca3af; padding: 10px; border-bottom: 1px solid #333; font-size: 0.9rem; }
+.cash-table td { padding: 12px 10px; color: white; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.cash-total { font-weight: 700; color: #10b981; }
+
+.prod-name { color: #ef4444; font-weight: 600; }
+.stock-count { font-weight: 700; color: white; font-size: 1.1rem; }
+
+/* Cost Form */
+.cost-form { display: flex; flex-direction: column; gap: 10px; }
+.cost-form label { color: var(--text-muted); font-size: 0.85rem; }
+.cyber-input { background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; }
+.cost-result { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 1.1rem; color: #10b981; }
+
+@media (max-width: 900px) { .sales-bottom-grid { grid-template-columns: 1fr; } .charts-split-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { 
+  .stats-header { flex-direction: column; align-items: flex-start; }
+  .tabs-container-center { flex-direction: column; width: 100%; }
+  .filter-pills { width: 100%; justify-content: space-between; }
+  .filter-pills button { padding: 6px 10px; font-size: 0.75rem; }
+}
+
+/* =========================================
+   NUEVO: HERRAMIENTAS DE ANÁLISIS (Fix Visual)
+   ========================================= */
+.analysis-tools-grid {
   display: grid;
-  /* Se adapta automáticamente: mínimo 220px por tarjeta */
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* Más ancho para que quepa el texto */
   gap: 20px;
   margin-bottom: 30px;
 }
 
-.kpi-card {
-  background: #252525; padding: 20px; border-radius: 12px;
-  border: 1px solid #333; position: relative; overflow: hidden;
-  transition: transform 0.2s; display: flex; flex-direction: column;
-}
-.kpi-card:hover { transform: translateY(-5px); border-color: #555; }
-
-/* Bordes Superiores de Color */
-.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: #444; }
-.kpi-card.income::before { background: #2ecc71; } /* Verde */
-.kpi-card.iva::before { background: #d63384; }    /* Rosa */
-.kpi-card.alert::before { background: #e74c3c; }  /* Rojo */
-.kpi-card.profit::before { background: #f1c40f; } /* Amarillo */
-.kpi-card.ticket::before { background: #9b59b6; } /* Morado */
-
-.kpi-card h3 { margin: 0; font-size: 0.85rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
-.kpi-card .number { font-size: 1.8rem; font-weight: 700; color: #fff; margin: 8px 0; }
-.kpi-card.alert .number { color: #ff6b6b; }
-.kpi-card.income .number { color: #2ecc71; }
-.kpi-card.profit .number { color: #f1c40f; }
-.kpi-card.ticket .number { color: #9b59b6; }
-
-/* --- TABS --- */
-.tabs-header { display: flex; gap: 5px; margin-bottom: 0; overflow-x: auto; }
-.tab-btn {
-  background: #1a1a1a; border: 1px solid #333; border-bottom: none;
-  color: #888; padding: 12px 20px; font-size: 0.95rem; cursor: pointer;
-  border-radius: 8px 8px 0 0; transition: all 0.2s; white-space: nowrap;
-}
-.tab-btn:hover { background: #252525; color: white; }
-.tab-btn.active {
-  background: #252525; color: #2ecc71; font-weight: bold; border-top: 3px solid #2ecc71;
-}
-
-.tab-content {
-  background: #252525; padding: 25px; border-radius: 0 8px 8px 8px;
-  border: 1px solid #333; min-height: 400px;
-}
-
-/* --- SALES DASHBOARD LAYOUT (RESPONSIVE) --- */
-.sales-dashboard-grid {
-    display: grid;
-    /* En escritorio: 1/3 Ranking, 2/3 Tabla. En móvil: 1 columna */
-    grid-template-columns: 1fr; 
-    gap: 20px;
-}
-@media (min-width: 900px) {
-    .sales-dashboard-grid { grid-template-columns: 1fr 2fr; }
-}
-
-/* Ranking Card */
-.top-products-card {
-    background: #2a2a2a; padding: 20px; border-radius: 12px; 
-    height: 100%; border: 1px solid #333;
-}
-.ranking-list { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
-.rank-info { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; }
-.rank-name { color: #fff; font-weight: 600; }
-.rank-val { color: #2ecc71; }
-.progress-bg { width: 100%; height: 6px; background: #444; border-radius: 3px; }
-.progress-fill { height: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60); border-radius: 3px; }
-
-/* History & Tables */
-.table-header-actions { 
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; 
-    flex-wrap: wrap; gap: 10px;
-}
-.btn-excel {
-    background: #1d6f42; color: white; border: none; padding: 8px 15px;
-    border-radius: 6px; cursor: pointer; font-weight: 600;
-    display: flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 0.9rem;
-}
-.btn-excel:hover { background: #218838; transform: translateY(-2px); }
-
-.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.custom-table { width: 100%; border-collapse: collapse; color: #ddd; min-width: 500px; /* Evita que se rompa en móvil */ }
-.custom-table th { text-align: left; padding: 12px; border-bottom: 2px solid #444; color: #888; font-size: 0.85rem; }
-.custom-table td { padding: 12px; border-bottom: 1px solid #333; font-size: 0.9rem; }
-
-.badge-success { background: rgba(46, 204, 113, 0.15); color: #2ecc71; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
-.amount-col { font-weight: bold; color: #2ecc71; }
-.bold-text { font-weight: bold; color: #ddd; }
-.empty-msg { text-align: center; color: #666; padding: 20px; }
-
-/* Tags de Movimiento */
-.tag.suma { color: #2ecc71; }
-.tag.resta, .tag.venta { color: #e74c3c; }
-
-/* ... resto de tu CSS anterior ... */
-
-/* --- BOTONES DE FILTRO (Estilo Pastilla) --- */
-.filter-buttons {
-  display: inline-flex; /* Para que se ajuste al contenido */
-  background: #252525;  /* Fondo oscuro del contenedor */
-  padding: 5px;
-  border-radius: 25px;  /* Bordes muy redondos */
-  border: 1px solid #333;
-  gap: 5px;
-  margin-bottom: 20px;
-  box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
-}
-
-.filter-btn {
-  background: transparent;
-  border: none;
-  color: #888;
-  padding: 8px 16px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: 20px; /* Botones redondos */
-  transition: all 0.3s ease;
-}
-
-.filter-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-/* Botón Activo */
-.filter-btn.active {
-  background: #2ecc71; /* Verde brillante */
-  color: #121212;      /* Texto oscuro para contraste */
-  font-weight: 700;
-  box-shadow: 0 2px 10px rgba(46, 204, 113, 0.4);
-}
-
-/* ... (Todo tu CSS anterior) ... */
-
-/* --- MODAL DE ALERTA STOCK --- */
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.8);
+.tool-card {
+  /* Reset de estilos de botón nativo */
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  
+  /* Estilos Visuales */
+  background: rgba(30, 30, 40, 0.6); /* Fondo oscuro semitransparente */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  
+  /* Layout Interno */
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s;
-}
-
-.modal-content {
-  background: #252525;
-  width: 90%; max-width: 400px;
-  border-radius: 12px;
-  border: 1px solid #444;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  gap: 15px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  width: 100%; /* Ocupar todo el espacio de la grilla */
+  position: relative;
   overflow: hidden;
 }
 
-.modal-header {
-  padding: 15px 20px;
-  background: #2a2a2a;
-  border-bottom: 1px solid #333;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.modal-header h3 { margin: 0; color: #ff6b6b; font-size: 1.1rem; }
-.btn-close {
-  background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer;
-}
-.btn-close:hover { color: #fff; }
-
-.modal-body {
-  padding: 20px;
-  max-height: 60vh;
-  overflow-y: auto;
+/* Efecto Hover */
+.tool-card:hover {
+  background: rgba(40, 40, 55, 0.9);
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
-.low-stock-item {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #333;
-}
-.low-stock-item:last-child { border-bottom: none; }
-
-.stock-badge-alert {
-  background: rgba(231, 76, 60, 0.2);
-  color: #ff6b6b;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-weight: bold;
-  font-size: 0.9rem;
+/* Efecto "Click" */
+.tool-card:active {
+  transform: scale(0.98);
 }
 
-/* Hacer que la tarjeta sea clickeable */
-.kpi-card.clickable {
+/* Iconos dentro de las tarjetas */
+.tool-icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* Evita que el icono se aplaste */
+  font-size: 1.2rem;
+}
+
+/* Colores específicos de los iconos */
+.tool-icon.blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; box-shadow: 0 0 10px rgba(59, 130, 246, 0.1); }
+.tool-icon.green { background: rgba(16, 185, 129, 0.15); color: #34d399; box-shadow: 0 0 10px rgba(16, 185, 129, 0.1); }
+.tool-icon.purple { background: rgba(139, 92, 246, 0.15); color: #a78bfa; box-shadow: 0 0 10px rgba(139, 92, 246, 0.1); }
+
+/* Textos dentro de la tarjeta */
+.tool-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-info span {
+  font-size: 0.75rem;
+  color: #9ca3af; /* Gris claro */
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.tool-info strong {
+  font-size: 1rem;
+  color: white;
+  font-weight: 600;
+}
+
+/* =========================================
+   ARREGLO HEADER HISTORIAL (Filtros + Descarga)
+   ========================================= */
+
+/* El contenedor principal del encabezado */
+.panel-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-wrap: wrap; /* Para móviles */
+  gap: 15px;
+}
+
+.panel-header-actions h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: white;
+  font-weight: 700;
+}
+
+/* Contenedor derecho que agrupa Filtros y Botón Descarga */
+.actions-right {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Espacio entre los filtros y el botón de descarga */
+}
+
+/* El grupo de botones de filtro (Todos, Hoy, etc.) */
+.filter-pills {
+  display: flex;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.filter-pills button {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.kpi-card.clickable:hover {
-  transform: translateY(-5px) scale(1.02);
-  box-shadow: 0 8px 15px rgba(231, 76, 60, 0.2);
-  border-color: #ff6b6b;
+  border-radius: 8px;
+  transition: all 0.2s;
 }
 
-/* Gráfico */
-.chart-container { background: #2a2a2a; padding: 15px; border-radius: 12px; height: 300px; margin-bottom: 30px; }
-@media (min-width: 768px) { .chart-container { height: 350px; padding: 20px; } }
-.section-title { margin-bottom: 15px; margin-top: 0; font-size: 1.1rem; }
-
-/* Utilidades */
-.shadow { box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-.animate-fade { animation: fadeIn 0.3s ease-in; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-/* Media Queries Extra (Móviles pequeños) */
-@media (max-width: 600px) {
-  .stats-header { flex-direction: column; gap: 15px; text-align: center; }
-  .table-header-actions { flex-direction: column; align-items: flex-start; }
-  .btn-excel { width: 100%; justify-content: center; }
+.filter-pills button:hover {
+  color: white;
 }
 
-/* =========================================================
-   MEDIA QUERY: RESPONSIVE MÓVIL (StatsPage)
-   Agrega esto al final de tu archivo CSS
-   ========================================================= */
+.filter-pills button.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
 
-@media (max-width: 900px) {
+/* BOTÓN DE DESCARGA (Ajustado) */
+.btn-download-icon {
+  width: 38px; /* Cuadrado perfecto */
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   
-  /* 1. Ajuste del Contenedor Principal */
-  .stats-container {
-    padding: 10px; /* Menos padding para ganar espacio */
-    overflow-x: hidden; /* Evita el scroll horizontal de toda la página */
-  }
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #9ca3af;
+  
+  cursor: pointer;
+  transition: all 0.2s;
+}
 
-  /* 2. Header: Título arriba, botón abajo */
-  .stats-header {
+.btn-download-icon:hover {
+  background: var(--primary); /* O el color morado/azul de tu tema */
+  color: white;
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* Ajuste Responsive */
+@media (max-width: 650px) {
+  .panel-header-actions {
     flex-direction: column;
-    align-items: stretch;
-    text-align: center;
-    gap: 15px;
-    padding: 15px;
-  }
-  .stats-header h1 { font-size: 1.4rem; }
-  .btn-secondary { width: 100%; }
-
-  /* 3. KPI GRID: 2 COLUMNAS (Lo que pediste) */
-  /* Forzamos 2 columnas incluso en pantallas chicas */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr; 
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  /* Ajuste de las tarjetas para que quepan en 2 columnas */
-  .kpi-card {
-    padding: 12px;
-    min-height: 100px;
+    align-items: flex-start;
   }
   
-  .kpi-card h3 { 
-    font-size: 0.65rem; /* Texto más pequeño */
-    white-space: nowrap; 
-    overflow: hidden; 
-    text-overflow: ellipsis; /* Puntos suspensivos si es muy largo */
-  }
-  
-  .kpi-card .number { 
-    font-size: 1.1rem; /* Número ajustado */
-    margin: 5px 0; 
-    word-break: break-all;
-  }
-  
-  .kpi-card small { 
-    font-size: 0.65rem; 
-    line-height: 1.1; 
-  }
-
-  /* 4. TABS Y CONTENIDO */
-  .tabs-header { 
-    margin-bottom: -1px; 
-    overflow-x: auto; /* Scroll si hay muchos tabs */
-  }
-  .tab-btn { 
-    padding: 10px 15px; 
-    font-size: 0.85rem; 
-    flex: 1; 
-    text-align: center; 
-  }
-  
-  .tab-content { 
-    padding: 15px 10px; /* Menos padding lateral */
-    border-radius: 0 0 8px 8px; 
-  }
-
-  /* 5. DASHBOARD INTERNO (Ranking y Tabla) */
-  /* Importante: Apilar uno debajo del otro */
-  .sales-dashboard-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  /* Ranking */
-  .top-products-card { 
-    padding: 15px; 
+  .actions-right {
     width: 100%;
+    justify-content: space-between;
   }
   
-  /* Filtros de Historial (Scroll horizontal si no caben) */
-  .filter-buttons {
-    display: flex;
-    overflow-x: auto;
-    padding-bottom: 5px;
-    max-width: 100%;
-    margin-bottom: 15px;
-  }
-  .filter-btn { 
-    white-space: nowrap; 
-    padding: 6px 12px; 
-    font-size: 0.8rem; 
-  }
-
-  /* Contenedor de la Tabla (Evita que se salga) */
-  .history-container {
-    width: 100%;
-    overflow: hidden; /* Contiene los hijos */
-  }
-
-  .table-header-actions { 
-    flex-direction: column; 
-    align-items: stretch; 
-    gap: 10px; 
+  .filter-pills {
+    flex: 1; /* Que ocupe el espacio disponible */
+    justify-content: space-between;
   }
   
-  .btn-excel { 
-    width: 100%; 
-    justify-content: center; 
-  }
-
-  /* Tabla con Scroll Interno */
-  .table-responsive {
-    width: 100%;
-    overflow-x: auto; /* Scroll solo en la tabla */
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Gráfico */
-  .chart-container {
-    height: 250px; /* Menos altura en móvil */
-    padding: 10px;
+  .filter-pills button {
+    padding: 6px 10px;
+    font-size: 0.8rem;
   }
 }
 
-/* Evitar “saltos” de layout por barras de scroll en tabs/filtros (solo UX móvil) */
-@media (hover: none) and (pointer: coarse) {
-  .tabs-header::-webkit-scrollbar,
-  .filter-buttons::-webkit-scrollbar,
-  .table-responsive::-webkit-scrollbar {
-    height: 8px;
-  }
+/* Resultados de IA dentro de modales */
+.ai-result-box {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.ai-badge-small {
+    display: flex; align-items: center; gap: 8px;
+    color: #a78bfa; font-weight: 700; font-size: 0.9rem;
+    margin-bottom: 10px; text-transform: uppercase;
+}
+
+.ai-text-large {
+    font-size: 1rem; color: white; line-height: 1.6;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }

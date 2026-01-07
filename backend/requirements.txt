@@ -10,3 +10,5 @@ python-jose[cryptography]
 python-multipart
 bcrypt==3.2.0
 openpyxl
+python-dotenv
+google-genai
