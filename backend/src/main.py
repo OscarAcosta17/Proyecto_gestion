@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, not_
 from pydantic import BaseModel
 from typing import List, Optional  # <--- CORRECCIÓN 1: Agregado Optional
 from jose import jwt, JWTError
@@ -427,8 +427,10 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db), current_us
 #          DASHBOARD / ESTADÍSTICAS
 # ==========================================
 
+# 1. ESTADÍSTICAS DE INVENTARIO (ACTUALIZADO: ZOMBIES + VALORIZACION)
 @app.get("/dashboard/stats")
 def get_dashboard_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Totales Básicos
     total_products = db.query(Product).filter(Product.user_id == current_user.id).count()
     
     low_stock = db.query(Product).filter(
@@ -436,10 +438,30 @@ def get_dashboard_stats(db: Session = Depends(get_db), current_user: User = Depe
         Product.stock < 5
     ).count()
     
+    # OPCION X: Valorización Bodega (Costo Total)
     inventory_value = db.query(func.sum(Product.stock * Product.cost_price)).filter(
         Product.user_id == current_user.id
     ).scalar() or 0
 
+    # OPCION Y: Productos "Zombies" (Stock > 0 pero sin ventas en 30 días)
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    
+    # Subquery: IDs de productos vendidos en los últimos 30 días
+    sold_product_ids = db.query(SaleItem.product_id).join(Sale).filter(
+        Sale.user_id == current_user.id,
+        Sale.date >= thirty_days_ago
+    ).distinct()
+
+    # Productos que tienen stock, NO están en la lista de vendidos y pertenecen al usuario
+    zombie_products = db.query(Product.name, Product.stock).filter(
+        Product.user_id == current_user.id,
+        Product.stock > 0,
+        Product.id.notin_(sold_product_ids)
+    ).limit(5).all()
+
+    zombies_list = [{"name": z[0], "stock": z[1]} for z in zombie_products]
+
+    # Movimientos Recientes
     recent_movements = db.query(MovementHistory).join(Product).filter(
         Product.user_id == current_user.id
     ).order_by(MovementHistory.timestamp.desc()).limit(5).all()
@@ -459,10 +481,11 @@ def get_dashboard_stats(db: Session = Depends(get_db), current_user: User = Depe
         "total_products": total_products,
         "low_stock": low_stock,
         "inventory_value": inventory_value,
-        "recent_movements": movements_data
+        "recent_movements": movements_data,
+        "zombie_products": zombies_list # Nuevo Campo
     }
 
-# --- ESTA ES LA FUNCIÓN QUE FALTABA Y QUE RECUPERAMOS ---
+# 2. ESTADÍSTICAS DE VENTAS (ACTUALIZADO: KPI EFICIENCIA + PAGOS)
 @app.get("/sales/stats")
 def get_sales_statistics(
     range: str = "recent", 
@@ -497,6 +520,25 @@ def get_sales_statistics(
     ).join(Product).join(Sale).filter(
         Sale.user_id == current_user.id
     ).scalar() or 0
+
+    # KPIs EFICIENCIA
+    total_transactions = db.query(Sale).filter(
+        Sale.user_id == current_user.id, Sale.date >= start_of_month
+    ).count()
+
+    total_items_sold = db.query(func.sum(SaleItem.quantity)).join(Sale).filter(
+        Sale.user_id == current_user.id, Sale.date >= start_of_month
+    ).scalar() or 0
+
+    # ITEM 1: KPIs
+    items_per_basket = round(total_items_sold / total_transactions, 1) if total_transactions > 0 else 0
+    margin_percent = round((month_profit / sales_month * 100), 1) if sales_month > 0 else 0
+    
+    # ITEM 2: Placeholder para Métodos de Pago (Espacio reservado)
+    payment_methods = {
+        "efectivo": 0,
+        "debito": 0
+    }
 
     history_query = db.query(Sale).filter(
         Sale.user_id == current_user.id
@@ -537,7 +579,11 @@ def get_sales_statistics(
         "month_profit": month_profit, 
         "total_profit": total_profit,
         "sales_history": history,
-        "top_products": top_products
+        "top_products": top_products,
+        # NUEVOS CAMPOS AGREGADOS
+        "items_per_basket": items_per_basket,
+        "margin_percent": margin_percent,
+        "payment_methods": payment_methods
     }
 
 @app.get("/sales/export")

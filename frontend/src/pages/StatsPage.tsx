@@ -31,8 +31,9 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 interface InventoryStats {
   total_products: number;
   low_stock: number;
-  inventory_value: number;
+  inventory_value: number; 
   recent_movements: { product: string; type: string; quantity: number; date: string; }[];
+  zombie_products: { name: string; stock: number; }[]; 
 }
 
 interface SalesStats {
@@ -42,6 +43,9 @@ interface SalesStats {
   total_profit: number; 
   sales_history: { id: number; date: string; total: number; items_count: number; }[];
   top_products: { name: string; sold: number; }[];
+  margin_percent: number;
+  items_per_basket: number;
+  payment_methods: { efectivo: number; debito: number };
 }
 
 export default function StatsPage() {
@@ -50,34 +54,27 @@ export default function StatsPage() {
   const [listFilter, setListFilter] = useState<'recent' | 'daily' | 'weekly' | 'monthly'>('recent');
   const [loading, setLoading] = useState(true);
 
-  // Estados de Datos
+  // Datos
   const [invStats, setInvStats] = useState<InventoryStats | null>(null);
   const [salesStats, setSalesStats] = useState<SalesStats | null>(null);
   const [products, setProducts] = useState<any[]>([]);
 
-  // Estados de Modales
+  // Modales
   const [showStockModal, setShowStockModal] = useState(false);
   const [showCostModal, setShowCostModal] = useState(false);
   const [showGrowthModal, setShowGrowthModal] = useState(false);
   const [showCashModal, setShowCashModal] = useState(false);
 
-  // --- ESTADOS DE IA ---
-  
-  // Costos (Modal Calculadora)
+  // IA States
   const [costInput, setCostInput] = useState("");
   const [costInsight, setCostInsight] = useState("");
   const [costLoading, setCostLoading] = useState(false);
-
-  // Crecimiento (Modal Proyección)
   const [growthInsight, setGrowthInsight] = useState("");
   const [growthLoading, setGrowthLoading] = useState(false);
-
-  // NOTA: Se eliminaron los estados de IA para Caja, ya que será manual.
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
   const token = localStorage.getItem("token");
 
-  // --- CARGA INICIAL DE DATOS ---
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -101,7 +98,7 @@ export default function StatsPage() {
     fetchData();
   }, [API_URL, token]);
 
-  // --- LÓGICA IA 1: ANÁLISIS DE COSTOS ---
+  // --- LÓGICA IA ---
   const handleCostAnalysis = async () => {
     if (!costInput) return alert("Por favor ingresa un monto aproximado.");
     setCostLoading(true);
@@ -121,9 +118,8 @@ export default function StatsPage() {
     }
   };
 
-  // --- LÓGICA IA 2: PROYECCIÓN DE CRECIMIENTO ---
   const handleGrowthAnalysis = async () => {
-    if (growthInsight) return; // Si ya existe, no recargar
+    if (growthInsight) return;
     setGrowthLoading(true);
     try {
         const data = await getGeminiAnalysis({
@@ -142,7 +138,7 @@ export default function StatsPage() {
     }
   };
 
-  // --- HELPERS Y GRÁFICOS ---
+  // --- GRAFICOS & HELPERS ---
   const handleExport = () => {
     if (!salesStats?.sales_history) return;
     const headers = ["ID,Fecha,Total,Items\n"];
@@ -156,6 +152,11 @@ export default function StatsPage() {
     link.click();
     link.remove();
   };
+
+  // CALCULO TOTAL UNIDADES FÍSICAS
+  const totalStockUnits = useMemo(() => {
+    return products.reduce((acc, curr) => acc + curr.stock, 0);
+  }, [products]);
 
   const processedHistory = useMemo(() => {
     if (!salesStats?.sales_history) return { labels: [], income: [], profit: [] };
@@ -186,6 +187,17 @@ export default function StatsPage() {
     labels: products.map(p => p.name).slice(0, 8),
     datasets: [{ label: 'Stock', data: products.map(p => p.stock).slice(0, 8), backgroundColor: products.map(p => p.stock < 5 ? '#ef4444' : '#6366f1'), borderRadius: 4 }]
   };
+  
+  const paymentChartData = {
+    labels: ['Efectivo', 'Débito'],
+    datasets: [{
+        data: [50, 50],
+        backgroundColor: ['#3b82f6', '#10b981'],
+        borderColor: '#0f1014',
+        borderWidth: 2
+    }]
+  };
+
   const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#6b7280' }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#6b7280' }, grid: { display: false } } } };
   
   const filteredSalesHistory = useMemo(() => {
@@ -221,14 +233,7 @@ export default function StatsPage() {
             </div>
         </header>
 
-        {/* --- KPI GRID --- */}
-        <div className="kpi-grid">
-            <div className="kpi-card green-glow"><div className="kpi-icon icon-green">💰</div><div className="kpi-content"><h3>Ventas Hoy</h3><div className="kpi-value">${(salesStats?.today_income || 0).toLocaleString('es-CL')}</div></div></div>
-            <div className="kpi-card blue-glow"><div className="kpi-icon icon-blue">📅</div><div className="kpi-content"><h3>Ventas Mes</h3><div className="kpi-value">${(salesStats?.month_income || 0).toLocaleString('es-CL')}</div></div></div>
-            <div className="kpi-card gold-glow"><div className="kpi-icon icon-gold">📈</div><div className="kpi-content"><h3>Ganancia Neta</h3><div className="kpi-value">${(salesStats?.month_profit || 0).toLocaleString('es-CL')}</div></div></div>
-            <div className={`kpi-card red-alert clickable`} onClick={() => setShowStockModal(true)}><div className="kpi-icon icon-red">⚠️</div><div className="kpi-content"><h3>Stock Crítico</h3><div className="kpi-value">{invStats?.low_stock || 0}</div></div></div>
-        </div>
-
+        {/* --- TABS --- */}
         <div className="tabs-container-center">
             <button className={`tab-pill-large ${activeTab === 'sales' ? 'active' : ''}`} onClick={() => setActiveTab('sales')}>Gestión de Ventas</button>
             <button className={`tab-pill-large ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>Inventario y Stock</button>
@@ -237,31 +242,45 @@ export default function StatsPage() {
         <div className="stats-content-area">
             {activeTab === 'sales' && (
                 <div className="sales-view-container">
+                    
+                    {/* 1. KPIs DE VENTAS (Movidos Aquí) */}
+                    <div className="kpi-grid">
+                        <div className="kpi-card gold-glow"><div className="kpi-icon icon-gold">📊</div><div className="kpi-content"><h3>Margen Real</h3><div className="kpi-value">{salesStats?.margin_percent || 0}%</div><small className="text-muted">Rentabilidad neta</small></div></div>
+                        <div className="kpi-card purple-glow"><div className="kpi-icon icon-purple">🛍️</div><div className="kpi-content"><h3>Items / Canasta</h3><div className="kpi-value">{salesStats?.items_per_basket || 0}</div><small className="text-muted">Promedio productos</small></div></div>
+                        {/* CAMBIO: Ventas Hoy */}
+                        <div className="kpi-card green-glow"><div className="kpi-icon icon-green">💰</div><div className="kpi-content"><h3>Ventas Hoy</h3><div className="kpi-value">${(salesStats?.today_income || 0).toLocaleString('es-CL')}</div><small className="text-muted">Cierre diario</small></div></div>
+                    </div>
+
+                    {/* 2. Gráficos Split */}
                     <div className="charts-split-grid">
                         <div className="panel-card"><div className="panel-header-mini"><span className="label">Ingresos Brutos</span><span className="value success">${(salesStats?.month_income || 0).toLocaleString('es-CL')}</span></div><div className="chart-wrapper-mini"><Line options={chartOptions} data={incomeChartData} /></div></div>
                         <div className="panel-card"><div className="panel-header-mini"><span className="label">Ganancia Neta</span><span className="value warning">${(salesStats?.month_profit || 0).toLocaleString('es-CL')}</span></div><div className="chart-wrapper-mini"><Line options={chartOptions} data={profitChartData} /></div></div>
                     </div>
 
+                    {/* 3. Herramientas */}
                     <div className="analysis-tools-grid">
-                        <button className="tool-card" onClick={() => setShowCostModal(true)}>
-                            <div className="tool-icon blue"><CalculatorIcon /></div>
-                            <div className="tool-info"><span>Herramienta</span><strong>Estimar Costos</strong></div>
-                        </button>
-                        
-                        <button className="tool-card" onClick={() => { setShowGrowthModal(true); handleGrowthAnalysis(); }}>
-                            <div className="tool-icon green"><TrendingUpIcon /></div>
-                            <div className="tool-info"><span>Análisis</span><strong>Proyección</strong></div>
-                        </button>
-                        
-                        {/* CIERRES CAJA AHORA SOLO MUESTRA EL MODAL, SIN IA */}
-                        <button className="tool-card" onClick={() => setShowCashModal(true)}>
-                            <div className="tool-icon purple"><ArchiveIcon /></div>
-                            <div className="tool-info"><span>Historial</span><strong>Cierres Caja</strong></div>
-                        </button>
+                        <button className="tool-card" onClick={() => setShowCostModal(true)}><div className="tool-icon blue"><CalculatorIcon /></div><div className="tool-info"><span>Herramienta</span><strong>Estimar Costos</strong></div></button>
+                        <button className="tool-card" onClick={() => { setShowGrowthModal(true); handleGrowthAnalysis(); }}><div className="tool-icon green"><TrendingUpIcon /></div><div className="tool-info"><span>Análisis</span><strong>Proyección</strong></div></button>
+                        <button className="tool-card" onClick={() => setShowCashModal(true)}><div className="tool-icon purple"><ArchiveIcon /></div><div className="tool-info"><span>Historial</span><strong>Cierres Caja</strong></div></button>
                     </div>
 
-                    <div className="sales-bottom-grid">
+                    {/* 4. Gráficos Secundarios */}
+                    <div className="charts-split-grid">
                          <div className="panel-card ranking-panel">
+                            <div className="panel-header"><h3>💳 Medios de Pago</h3><span className="badge">Simulación</span></div>
+                            <div className="ranking-content-flex">
+                                <div className="doughnut-container">
+                                    <Doughnut data={paymentChartData} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
+                                    <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '0.7rem', color: '#666', textAlign: 'center'}}>Próximamente<br/>Datos Reales</div>
+                                </div>
+                                <div className="ranking-list">
+                                    <div className="ranking-item"><div className="rank-dot" style={{backgroundColor: '#3b82f6'}}></div><span>Efectivo</span></div>
+                                    <div className="ranking-item"><div className="rank-dot" style={{backgroundColor: '#10b981'}}></div><span>Débito</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="panel-card ranking-panel">
                             <div className="panel-header"><h3>🏆 Participación</h3></div>
                             <div className="ranking-content-flex">
                                 <div className="doughnut-container">
@@ -277,34 +296,35 @@ export default function StatsPage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="panel-card">
-                            <div className="panel-header-actions">
-                                <h3>Historial de Ventas</h3>
-                                <div className="actions-right">
-                                    <div className="filter-pills">
-                                        <button onClick={() => setListFilter('recent')} className={listFilter === 'recent' ? 'active' : ''}>Todos</button>
-                                        <button onClick={() => setListFilter('daily')} className={listFilter === 'daily' ? 'active' : ''}>Hoy</button>
-                                        <button onClick={() => setListFilter('weekly')} className={listFilter === 'weekly' ? 'active' : ''}>Semana</button>
-                                        <button onClick={() => setListFilter('monthly')} className={listFilter === 'monthly' ? 'active' : ''}>Mes</button>
-                                    </div>
-                                    <button className="btn-download-icon" onClick={handleExport}><DownloadIcon /></button>
+                    {/* 5. Historial */}
+                    <div className="panel-card">
+                        <div className="panel-header-actions">
+                            <h3>Historial de Ventas</h3>
+                            <div className="actions-right">
+                                <div className="filter-pills">
+                                    <button onClick={() => setListFilter('recent')} className={listFilter === 'recent' ? 'active' : ''}>Todos</button>
+                                    <button onClick={() => setListFilter('daily')} className={listFilter === 'daily' ? 'active' : ''}>Hoy</button>
+                                    <button onClick={() => setListFilter('weekly')} className={listFilter === 'weekly' ? 'active' : ''}>Semana</button>
+                                    <button onClick={() => setListFilter('monthly')} className={listFilter === 'monthly' ? 'active' : ''}>Mes</button>
                                 </div>
+                                <button className="btn-download-icon" onClick={handleExport}><DownloadIcon /></button>
                             </div>
-                            <div className="table-responsive-wrapper">
-                                <table className="cyber-table">
-                                    <thead><tr><th>Fecha</th><th className="text-right">Total</th><th>Estado</th></tr></thead>
-                                    <tbody>
-                                        {filteredSalesHistory.map(sale => (
-                                            <tr key={sale.id} className="row-hover">
-                                                <td>{formatDate(sale.date)}</td>
-                                                <td className="text-right amount">${sale.total.toLocaleString('es-CL')}</td>
-                                                <td className="text-center"><span className="status-badge paid">OK</span></td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                        </div>
+                        <div className="table-responsive-wrapper">
+                            <table className="cyber-table">
+                                <thead><tr><th>Fecha</th><th className="text-right">Total</th><th>Estado</th></tr></thead>
+                                <tbody>
+                                    {filteredSalesHistory.map(sale => (
+                                        <tr key={sale.id} className="row-hover">
+                                            <td>{formatDate(sale.date)}</td>
+                                            <td className="text-right amount">${sale.total.toLocaleString('es-CL')}</td>
+                                            <td className="text-center"><span className="status-badge paid">OK</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -312,7 +332,66 @@ export default function StatsPage() {
 
             {activeTab === 'inventory' && (
                 <div className="inventory-view">
-                    <div className="panel-card chart-card"><div className="panel-header"><h3>Niveles de Stock</h3></div><div className="chart-wrapper"><Bar options={chartOptions} data={stockChartData} /></div></div>
+                    
+                    {/* 1. KPIs DE INVENTARIO (3 COLUMNAS) */}
+                    <div className="kpi-grid">
+                        
+                        {/* ALERTA DE STOCK (Recuperada Aquí) */}
+                        <div className={`kpi-card red-alert clickable`} onClick={() => setShowStockModal(true)}>
+                            <div className="kpi-icon icon-red">⚠️</div>
+                            <div className="kpi-content">
+                                <h3>Stock Crítico</h3>
+                                <div className="kpi-value">{invStats?.low_stock || 0}</div>
+                                <small style={{color:'#fca5a5'}}>Ver productos</small>
+                            </div>
+                        </div>
+
+                        {/* RESUMEN GLOBAL (Nuevo) */}
+                        <div className="kpi-card blue-glow">
+                            <div className="kpi-icon icon-blue">📦</div>
+                            <div className="kpi-content">
+                                <h3>Resumen Global</h3>
+                                <div style={{fontSize: '0.9rem', color: '#e2e8f0', marginTop: '2px'}}>
+                                    <div><strong>{invStats?.total_products || 0}</strong> Prod. Únicos</div>
+                                    <div><strong>{totalStockUnits.toLocaleString()}</strong> U. Totales</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* VALORIZACIÓN */}
+                        <div className="kpi-card green-glow">
+                            <div className="kpi-icon icon-green">💰</div>
+                            <div className="kpi-content">
+                                <h3>Valor Bodega</h3>
+                                <div className="kpi-value" style={{fontSize: '1.4rem'}}>${(invStats?.inventory_value || 0).toLocaleString('es-CL')}</div>
+                                <small className="text-muted">Costo total</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 2. Charts & Lists */}
+                    <div className="inventory-grid-split">
+                        <div className="panel-card chart-card"><div className="panel-header"><h3>Niveles de Stock</h3></div><div className="chart-wrapper"><Bar options={chartOptions} data={stockChartData} /></div></div>
+                        
+                        <div className="panel-card">
+                            <div className="panel-header"><h3>🧟 Productos Zombie</h3><span className="badge-gray">Sin ventas 30d</span></div>
+                            <div className="table-responsive-wrapper">
+                                <table className="cyber-table">
+                                    <thead><tr><th>Producto</th><th className="text-right">Stock</th></tr></thead>
+                                    <tbody>
+                                        {invStats?.zombie_products?.length === 0 ? (
+                                            <tr><td colSpan={2} style={{textAlign:'center', padding:'20px', color:'#666'}}>¡Excelente! Todo se mueve.</td></tr>
+                                        ) : (
+                                            invStats?.zombie_products?.map((z, i) => (
+                                                <tr key={i}><td>{z.name}</td><td className="text-right" style={{color: '#fca5a5'}}>{z.stock}</td></tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div className="panel-card"><div className="panel-header"><h3>Últimos Movimientos</h3></div><div className="table-responsive-wrapper"><table className="cyber-table"><thead><tr><th>Producto</th><th>Tipo</th><th className="text-right">Cant.</th><th className="text-right">Fecha</th></tr></thead><tbody>{invStats?.recent_movements.map((mov, i) => (<tr key={i} className="row-hover"><td className="product-name">{mov.product}</td><td><span className={`type-badge ${mov.type}`}>{mov.type === 'suma' ? 'Entrada' : 'Salida'}</span></td><td className="text-right">{mov.quantity}</td><td className="text-right date-col">{formatDate(mov.date)}</td></tr>))}</tbody></table></div></div>
                 </div>
             )}
@@ -320,86 +399,10 @@ export default function StatsPage() {
       </div>
 
       {/* --- MODALES --- */}
-      
-      {showStockModal && (
-        <div className="modal-backdrop" onClick={() => setShowStockModal(false)}>
-            <div className="modal-cyber" onClick={e => e.stopPropagation()}>
-                <div className="modal-cyber-header"><h3>⚠️ Productos Críticos</h3><button onClick={() => setShowStockModal(false)}>×</button></div>
-                <div className="modal-cyber-body">
-                    <ul className="critical-list">{lowStockItems.map(p => <li key={p.id}><span className="prod-name">{p.name}</span><span className="stock-count">{p.stock}</span></li>)}</ul>
-                </div>
-            </div>
-        </div>
-      )}
-
-      {showCostModal && (
-        <div className="modal-backdrop" onClick={() => setShowCostModal(false)}>
-            {/* AHORA TIENE LA CLASE modal-lg */}
-            <div className="modal-cyber modal-lg" onClick={e => e.stopPropagation()}>
-                <div className="modal-cyber-header"><h3>🧮 Calculadora Inteligente</h3><button onClick={() => setShowCostModal(false)}>×</button></div>
-                <div className="modal-cyber-body">
-                    <div className="cost-form">
-                        <label>Ingresa tus Costos Fijos Mensuales ($)</label>
-                        <input type="number" className="cyber-input" placeholder="Ej: 500000" value={costInput} onChange={e => setCostInput(e.target.value)} />
-                        <button className="btn-primary-small" onClick={handleCostAnalysis} disabled={costLoading}>{costLoading ? "Calculando..." : "Analizar con IA"}</button>
-                        
-                        {costInsight && (
-                            <div className="ai-result-box">
-                                <div className="ai-badge-small"><GeminiSparkle /> <span>Análisis Financiero</span></div>
-                                <div className="markdown-content" style={{whiteSpace: 'pre-line'}}>{costInsight}</div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-      )}
-
-      {showGrowthModal && (
-        <div className="modal-backdrop" onClick={() => setShowGrowthModal(false)}>
-            {/* AHORA TIENE LA CLASE modal-lg */}
-            <div className="modal-cyber modal-lg" onClick={e => e.stopPropagation()}>
-                <div className="modal-cyber-header"><h3>🚀 Proyección de Crecimiento</h3><button onClick={() => setShowGrowthModal(false)}>×</button></div>
-                <div className="modal-cyber-body">
-                    {growthLoading ? (
-                        <div className="typing-indicator" style={{textAlign:'center', padding:'20px'}}>Analizando tendencias de mercado...</div>
-                    ) : (
-                        <div className="ai-result-box">
-                            <div className="ai-badge-small"><GeminiSparkle /> <span>Predicción IA</span></div>
-                            <div className="markdown-content" style={{whiteSpace: 'pre-line'}}>{growthInsight}</div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-      )}
-
-      {/* NUEVO MODAL DE CIERRE DE CAJA (SIN IA, SOLO DATOS) */}
-      {showCashModal && (
-        <div className="modal-backdrop" onClick={() => setShowCashModal(false)}>
-            <div className="modal-cyber" onClick={e => e.stopPropagation()}>
-                <div className="modal-cyber-header"><h3>📦 Cierres Diarios</h3><button onClick={() => setShowCashModal(false)}>×</button></div>
-                <div className="modal-cyber-body">
-                    <table className="cash-table">
-                        <thead>
-                            <tr><th>Fecha</th><th className="text-right">Total Vendido</th></tr>
-                        </thead>
-                        <tbody>
-                            {/* Usamos processedHistory para mostrar los totales diarios */}
-                            {processedHistory.labels.map((date, index) => (
-                                <tr key={date}>
-                                    <td>{date}</td>
-                                    <td className="text-right cash-total">${processedHistory.income[index].toLocaleString('es-CL')}</td>
-                                </tr>
-                            ))}
-                            {processedHistory.labels.length === 0 && <tr><td colSpan={2} style={{textAlign:'center', padding:'20px', color:'#666'}}>No hay registros.</td></tr>}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-      )}
-
+      {showStockModal && <div className="modal-backdrop" onClick={() => setShowStockModal(false)}><div className="modal-cyber" onClick={e => e.stopPropagation()}><div className="modal-cyber-header"><h3>⚠️ Stock Crítico</h3><button onClick={() => setShowStockModal(false)}>×</button></div><div className="modal-cyber-body"><ul className="critical-list">{lowStockItems.map(p => <li key={p.id}><span className="prod-name">{p.name}</span><span className="stock-count">{p.stock}</span></li>)}</ul></div></div></div>}
+      {showCostModal && <div className="modal-backdrop" onClick={() => setShowCostModal(false)}><div className="modal-cyber modal-lg" onClick={e => e.stopPropagation()}><div className="modal-cyber-header"><h3>🧮 Calculadora Inteligente</h3><button onClick={() => setShowCostModal(false)}>×</button></div><div className="modal-cyber-body"><div className="cost-form"><label>Ingresa tus Costos Fijos Mensuales ($)</label><input type="number" className="cyber-input" placeholder="Ej: 500000" value={costInput} onChange={e => setCostInput(e.target.value)} /><button className="btn-primary-small" onClick={handleCostAnalysis} disabled={costLoading}>{costLoading ? "Calculando..." : "Analizar con IA"}</button>{costInsight && <div className="ai-result-box"><div className="ai-badge-small"><GeminiSparkle /> <span>Análisis Financiero</span></div><div className="markdown-content" style={{whiteSpace: 'pre-line'}}>{costInsight}</div></div>}</div></div></div></div>}
+      {showGrowthModal && <div className="modal-backdrop" onClick={() => setShowGrowthModal(false)}><div className="modal-cyber modal-lg" onClick={e => e.stopPropagation()}><div className="modal-cyber-header"><h3>🚀 Proyección de Crecimiento</h3><button onClick={() => setShowGrowthModal(false)}>×</button></div><div className="modal-cyber-body">{growthLoading ? <div className="typing-indicator" style={{textAlign:'center', padding:'20px'}}>Analizando tendencias de mercado...</div> : <div className="ai-result-box"><div className="ai-badge-small"><GeminiSparkle /> <span>Predicción IA</span></div><div className="markdown-content" style={{whiteSpace: 'pre-line'}}>{growthInsight}</div></div>}</div></div></div>}
+      {showCashModal && <div className="modal-backdrop" onClick={() => setShowCashModal(false)}><div className="modal-cyber" onClick={e => e.stopPropagation()}><div className="modal-cyber-header"><h3>📦 Cierres Diarios</h3><button onClick={() => setShowCashModal(false)}>×</button></div><div className="modal-cyber-body"><table className="cash-table"><thead><tr><th>Fecha</th><th className="text-right">Total Vendido</th></tr></thead><tbody>{processedHistory.labels.map((date, index) => (<tr key={date}><td>{date}</td><td className="text-right cash-total">${processedHistory.income[index].toLocaleString('es-CL')}</td></tr>))}</tbody></table></div></div></div>}
     </div>
   );
 }
