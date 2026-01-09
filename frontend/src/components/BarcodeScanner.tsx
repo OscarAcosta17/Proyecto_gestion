@@ -8,8 +8,6 @@ import {
 interface ScannerProps {
   onScan: (code: string) => void;
   active: boolean;
-
-  // nuevos: para probar
   width?: number;
   height?: number;
   fps?: number;
@@ -18,9 +16,9 @@ interface ScannerProps {
 export default function BarcodeScanner({
   onScan,
   active,
-  width = 1920,
-  height = 1080,
-  fps = 20,
+  width = 1280, // Bajamos la resolución ideal para evitar saturar el bus de datos del móvil
+  height = 720,
+  fps = 25,
 }: ScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReader = useRef<BrowserMultiFormatReader | null>(null);
@@ -30,7 +28,6 @@ export default function BarcodeScanner({
   useEffect(() => {
     if (!active) return;
 
-    // 1) Hints: solo códigos de producto
     const hints = new Map();
     const formats = [
       BarcodeFormat.EAN_13,
@@ -48,7 +45,6 @@ export default function BarcodeScanner({
 
     async function start() {
       try {
-        // 2) Selección de cámara trasera (como ya hacías)
         const videoInputDevices = await reader.listVideoInputDevices();
 
         const backCamera = videoInputDevices.find((device) => {
@@ -56,7 +52,8 @@ export default function BarcodeScanner({
           return (
             label.includes("back") ||
             label.includes("environment") ||
-            label.includes("trasera")
+            label.includes("trasera") ||
+            label.includes("0") // En algunos Android la cámara 0 es la trasera principal
           );
         });
 
@@ -64,15 +61,18 @@ export default function BarcodeScanner({
           ? backCamera.deviceId
           : videoInputDevices[0]?.deviceId;
 
-        if (!selectedDeviceId) throw new Error("No se encontraron cámaras");
+        if (!selectedDeviceId && videoInputDevices.length === 0) {
+            throw new Error("No se encontraron cámaras");
+        }
 
-        // 3) ABRIR STREAM con constraints (AQUÍ cambias FPS/resolución)
+        // --- AJUSTE DE CONSTRAINTS PARA MÓVIL ---
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            deviceId: { exact: selectedDeviceId },
+            deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+            facingMode: "environment", // Prioridad absoluta a la cámara trasera
             width: { ideal: width },
             height: { ideal: height },
-            frameRate: { ideal: fps, max: fps },
+            frameRate: { ideal: fps }
           },
           audio: false,
         });
@@ -84,25 +84,22 @@ export default function BarcodeScanner({
 
         streamRef.current = stream;
 
-        // 4) Reproducir video
         const videoEl = videoRef.current!;
         videoEl.srcObject = stream;
-        await videoEl.play();
+        
+        // --- ASEGURAR REPRODUCCIÓN ---
+        videoEl.onloadedmetadata = () => {
+          videoEl.play().catch(e => console.error("Error auto-play:", e));
+        };
 
-        // (Opcional) ver qué te dio realmente el dispositivo
-        // console.log(stream.getVideoTracks()[0].getSettings());
-
-        // 5) ZXing decodifica DESDE el stream (NO desde deviceId)
         reader.decodeFromStream(stream, videoEl, (result, _err) => {
-          if (!result) return;
-          if (lockRef.current) return;
+          if (!result || lockRef.current) return;
 
           lockRef.current = true;
-
           const code = result.getText();
+          
           if (navigator.vibrate) navigator.vibrate(200);
 
-          // detener para evitar doble lectura y apagar cámara
           reader.reset();
           stream.getTracks().forEach((t) => t.stop());
           videoEl.srcObject = null;
@@ -118,10 +115,11 @@ export default function BarcodeScanner({
 
     return () => {
       cancelled = true;
-      reader.reset();
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-
+      if (codeReader.current) codeReader.current.reset();
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
       if (videoRef.current) videoRef.current.srcObject = null;
     };
   }, [active, onScan, width, height, fps]);
@@ -132,17 +130,31 @@ export default function BarcodeScanner({
         width: "100%",
         overflow: "hidden",
         background: "black",
-        borderRadius: "8px",
+        borderRadius: "12px",
         display: active ? "block" : "none",
+        position: "relative",
+        aspectRatio: "4/3" // Ayuda al navegador a reservar el espacio correcto
       }}
     >
       <video
         ref={videoRef}
-        style={{ width: "100%", height: "300px", objectFit: "cover" }}
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
         muted
         autoPlay
-        playsInline
+        playsInline // CRÍTICO para móviles iOS/Android
       />
+      {/* Overlay visual opcional para que el usuario sepa dónde apuntar */}
+      <div style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        border: "2px solid rgba(0, 255, 0, 0.5)",
+        width: "70%",
+        height: "40%",
+        pointerEvents: "none",
+        boxShadow: "0 0 0 4000px rgba(0, 0, 0, 0.3)"
+      }}></div>
     </div>
   );
 }
