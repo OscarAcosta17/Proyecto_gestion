@@ -13,7 +13,7 @@ from sqlalchemy import extract
 import csv
 import io
 from fastapi.responses import StreamingResponse
-from ai import router as ai_router
+from .ai import router as ai_router
 import models 
 from database import engine, Base, get_db
 from models import User, Product, SupportTicket, MovementHistory, Sale, SaleItem, GlobalMessage
