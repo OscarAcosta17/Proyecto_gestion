@@ -24,9 +24,15 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Inventory API")
 app.include_router(ai_router)
 
+origins = [
+    "http://localhost:5173", # Para desarrollo local
+    "https://tu-proyecto-en.vercel.app", # <--- Aquí pondrás tu URL de Vercel cuando la tengas
+    "*" # (TEMPORAL: Pon esto mientras configuras para que no te falle nada)
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins, # Usar la lista de arriba
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

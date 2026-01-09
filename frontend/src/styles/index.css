@@ -1,8 +1,3 @@
-/* =========================================
-   FIX GLOBAL: HABILITAR SCROLL EN TODO EL SITIO
-   ========================================= */
-
-/* 1. Desbloquear el navegador */
 html, body {
     overflow-y: auto !important; /* Permite scroll vertical */
     overflow-x: hidden !important; /* Evita scroll lateral */
