@@ -104,7 +104,7 @@ const LoginPage = () => {
     
     // CORRECCIÓN: Usamos ruta relativa "/api" siempre.
     // Esto obliga a pasar por el Proxy de Vite que configuramos.
-    const backendUrl = '/api'; 
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';; 
     
     const endpoint = isLogin ? '/login' : '/register';
     const bodyData = isLogin ? { email: formData.email, password: formData.password } : formData;
