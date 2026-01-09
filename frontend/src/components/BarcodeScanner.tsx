@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BrowserMultiFormatReader,
   BarcodeFormat,
@@ -25,24 +25,44 @@ export default function BarcodeScanner({
   const streamRef = useRef<MediaStream | null>(null);
   const lockRef = useRef(false);
 
-  // Función para manejar el foco manual al tocar el video
-  const handleManualFocus = async (_event: React.MouseEvent<HTMLVideoElement>) => {
-    const track = streamRef.current?.getVideoTracks()[0];
-    if (!track) return;
+  // Estado para la posición del círculo de enfoque visual
+  const [focusPoint, setFocusPoint] = useState<{ x: number; y: number } | null>(null);
 
+  // Función para manejar el foco manual al tocar el video
+  const handleManualFocus = async (event: React.MouseEvent<HTMLVideoElement>) => {
+    const video = videoRef.current;
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track || !video) return;
+
+    // 1. Lógica visual: calcular posición del toque para el círculo
+    const rect = video.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    setFocusPoint({ x, y });
+
+    // 2. Lógica de Hardware: aplicar restricciones de enfoque
     const capabilities = (track.getCapabilities?.() as any) || {};
     if (capabilities.focusMode?.includes("manual")) {
       try {
         await track.applyConstraints({
-          advanced: [{ focusMode: "manual" }]
+          advanced: [{ 
+            focusMode: "manual",
+            // Algunos navegadores permiten enviar coordenadas normalizadas (0 a 1)
+            pointsOfInterest: [{ x: x / rect.width, y: y / rect.height }] 
+          }]
         } as any);
-        // Pequeño delay y volvemos a intentar continuous tras el toque
+        
+        // Volvemos a modo continuo tras 1.5 segundos para no dejar la lente bloqueada
         setTimeout(async () => {
-           await track.applyConstraints({ advanced: [{ focusMode: "continuous" }] } as any);
-        }, 500);
+          setFocusPoint(null);
+          await track.applyConstraints({ advanced: [{ focusMode: "continuous" }] } as any);
+        }, 1500);
       } catch (e) {
-        console.error("Error manual focus:", e);
+        console.error("Error manual focus hardware:", e);
       }
+    } else {
+      // Si el hardware no soporta manual, ocultamos el círculo tras un momento
+      setTimeout(() => setFocusPoint(null), 800);
     }
   };
 
@@ -68,12 +88,11 @@ export default function BarcodeScanner({
       try {
         const videoInputDevices = await reader.listVideoInputDevices();
 
-        // Buscamos específicamente el sensor principal (usualmente "0" o "main")
         const backCamera = videoInputDevices.find((device) => {
           const label = (device.label || "").toLowerCase();
           return (
             (label.includes("back") || label.includes("trasera") || label.includes("environment")) &&
-            !label.includes("wide") && !label.includes("ultra") // Evitamos lentes gran angular
+            !label.includes("wide") && !label.includes("ultra") 
           );
         }) || videoInputDevices[0];
 
@@ -96,7 +115,6 @@ export default function BarcodeScanner({
 
         streamRef.current = stream;
 
-        // Intentar activar autofocus continuo desde el inicio
         const track = stream.getVideoTracks()[0];
         const capabilities = (track.getCapabilities?.() as any) || {};
         if (capabilities.focusMode?.includes("continuous")) {
@@ -146,6 +164,27 @@ export default function BarcodeScanner({
         autoPlay
         playsInline
       />
+
+      {/* CÍRCULO DE ENFOQUE VISUAL */}
+      {focusPoint && (
+        <div
+          style={{
+            position: "absolute",
+            top: focusPoint.y,
+            left: focusPoint.x,
+            width: "50px",
+            height: "50px",
+            border: "2px solid white",
+            borderRadius: "50%",
+            transform: "translate(-50%, -50%)",
+            pointerEvents: "none",
+            boxShadow: "0 0 8px rgba(255,255,255,0.6)",
+            zIndex: 10,
+            transition: "opacity 0.2s"
+          }}
+        />
+      )}
+
       {active && (
         <div style={{
           position: "absolute",
