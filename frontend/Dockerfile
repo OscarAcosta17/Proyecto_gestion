@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 5173
 
 # Iniciamos el servidor de desarrollo escuchando en todas las interfaces
-CMD ["npm", "run", "dev", "--", "--host"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
