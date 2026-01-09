@@ -8,8 +8,6 @@ import {
 interface ScannerProps {
   onScan: (code: string) => void;
   active: boolean;
-
-  // nuevos: para probar
   width?: number;
   height?: number;
   fps?: number;
@@ -30,7 +28,6 @@ export default function BarcodeScanner({
   useEffect(() => {
     if (!active) return;
 
-    // 1) Hints: solo códigos de producto
     const hints = new Map();
     const formats = [
       BarcodeFormat.EAN_13,
@@ -48,7 +45,6 @@ export default function BarcodeScanner({
 
     async function start() {
       try {
-        // 2) Selección de cámara trasera (como ya hacías)
         const videoInputDevices = await reader.listVideoInputDevices();
 
         const backCamera = videoInputDevices.find((device) => {
@@ -66,7 +62,6 @@ export default function BarcodeScanner({
 
         if (!selectedDeviceId) throw new Error("No se encontraron cámaras");
 
-        // 3) ABRIR STREAM con constraints (AQUÍ cambias FPS/resolución)
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             deviceId: { exact: selectedDeviceId },
@@ -84,25 +79,28 @@ export default function BarcodeScanner({
 
         streamRef.current = stream;
 
-        // 4) Reproducir video
+        // --- BLOQUE DE AUTOFOCUS AÑADIDO ---
+        const track = stream.getVideoTracks()[0];
+        const capabilities = (track.getCapabilities?.() as any) || {};
+        if (capabilities.focusMode?.includes("continuous")) {
+          await track.applyConstraints({
+            advanced: [{ focusMode: "continuous" }]
+          } as any);
+        }
+        // ------------------------------------
+
         const videoEl = videoRef.current!;
         videoEl.srcObject = stream;
         await videoEl.play();
 
-        // (Opcional) ver qué te dio realmente el dispositivo
-        // console.log(stream.getVideoTracks()[0].getSettings());
-
-        // 5) ZXing decodifica DESDE el stream (NO desde deviceId)
         reader.decodeFromStream(stream, videoEl, (result, _err) => {
           if (!result) return;
           if (lockRef.current) return;
 
           lockRef.current = true;
-
           const code = result.getText();
           if (navigator.vibrate) navigator.vibrate(200);
 
-          // detener para evitar doble lectura y apagar cámara
           reader.reset();
           stream.getTracks().forEach((t) => t.stop());
           videoEl.srcObject = null;
@@ -121,7 +119,6 @@ export default function BarcodeScanner({
       reader.reset();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
-
       if (videoRef.current) videoRef.current.srcObject = null;
     };
   }, [active, onScan, width, height, fps]);
