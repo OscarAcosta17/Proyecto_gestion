@@ -26,7 +26,7 @@ export default function BarcodeScanner({
   const lockRef = useRef(false);
 
   // Función para manejar el foco manual al tocar el video
-  const handleManualFocus = async (event: React.MouseEvent<HTMLVideoElement>) => {
+  const handleManualFocus = async (_event: React.MouseEvent<HTMLVideoElement>) => {
     const track = streamRef.current?.getVideoTracks()[0];
     if (!track) return;
 
