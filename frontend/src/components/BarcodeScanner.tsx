@@ -18,7 +18,6 @@ type CameraMode = "back" | "front";
 export default function BarcodeScanner({
   onScan,
   active,
-  // Mejor default para móvil
   width = 1280,
   height = 720,
   fps = 24,
@@ -27,9 +26,8 @@ export default function BarcodeScanner({
   const streamRef = useRef<MediaStream | null>(null);
   const lockRef = useRef(false);
 
-  // UI: cámaras y modo
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-  const [cameraMode, setCameraMode] = useState<CameraMode>("back");
+  const [cameraMode] = useState<CameraMode>("back");
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
 
   const stopStream = useCallback(() => {
@@ -44,7 +42,6 @@ export default function BarcodeScanner({
 
       const norm = (s: string) => (s || "").toLowerCase();
       const anyLabel = list.some((d) => norm(d.label).trim().length > 0);
-      // Si no hay labels (común en iOS), no forzar deviceId, usa facingMode.
       if (!anyLabel) return null;
 
       if (mode === "front") {
@@ -53,7 +50,6 @@ export default function BarcodeScanner({
         return front.deviceId;
       }
 
-      // back: preferir “principal”, excluir ultra-wide/tele si se puede
       const backCandidates = list.filter((d) =>
         /back|rear|trasera|environment/.test(norm(d.label))
       );
@@ -79,7 +75,6 @@ export default function BarcodeScanner({
     []
   );
 
-  // Enumerar dispositivos (con permiso previo para obtener labels cuando sea posible)
   useEffect(() => {
     if (!active) return;
 
@@ -87,7 +82,6 @@ export default function BarcodeScanner({
 
     async function initDevices() {
       try {
-        // Pedir permiso una vez para mejorar labels
         const temp = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false,
@@ -115,11 +109,9 @@ export default function BarcodeScanner({
     };
   }, [active, cameraMode, pickPreferredDeviceId]);
 
-  // Iniciar / decodificar
   useEffect(() => {
     if (!active) return;
 
-    // ✅ Reader local (NO nullable). Evita "reader possibly null".
     const hints = new Map();
     hints.set(DecodeHintType.POSSIBLE_FORMATS, [
       BarcodeFormat.EAN_13,
@@ -127,6 +119,7 @@ export default function BarcodeScanner({
       BarcodeFormat.CODE_128,
       BarcodeFormat.UPC_A,
     ]);
+
     const reader = new BrowserMultiFormatReader(hints);
     lockRef.current = false;
 
@@ -178,7 +171,6 @@ export default function BarcodeScanner({
           const code = result.getText();
           if (navigator.vibrate) navigator.vibrate(200);
 
-          // parar antes de onScan para liberar cámara
           try {
             reader.reset();
           } catch {}
@@ -202,15 +194,82 @@ export default function BarcodeScanner({
     };
   }, [active, onScan, width, height, fps, selectedDeviceId, cameraMode, stopStream]);
 
-  const flipCamera = () => {
-    lockRef.current = false;
-    setCameraMode((m) => (m === "back" ? "front" : "back"));
-    setSelectedDeviceId(null); // autoselección según modo
-  };
-
   const onSelectDevice = (id: string) => {
     lockRef.current = false;
     setSelectedDeviceId(id);
+  };
+
+  // --- estilos “bonitos” del selector (sin CSS externo) ---
+  const overlayBarStyle: React.CSSProperties = {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    right: 12,
+    zIndex: 20,
+    display: "flex",
+    gap: 10,
+    alignItems: "center",
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "rgba(10, 12, 16, 0.55)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: "0.2px",
+    whiteSpace: "nowrap",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  };
+
+  const dotStyle: React.CSSProperties = {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    background: "rgba(255,255,255,0.75)",
+    boxShadow: "0 0 10px rgba(255,255,255,0.25)",
+  };
+
+  const selectWrapStyle: React.CSSProperties = {
+    position: "relative",
+    flex: 1,
+    minWidth: 0,
+  };
+
+  const selectStyle: React.CSSProperties = {
+    width: "100%",
+    appearance: "none",
+    WebkitAppearance: "none",
+    MozAppearance: "none",
+    background: "rgba(255,255,255,0.08)",
+    color: "rgba(255,255,255,0.92)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    borderRadius: 12,
+    padding: "10px 38px 10px 12px",
+    fontSize: 12,
+    outline: "none",
+    cursor: "pointer",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  };
+
+  const chevronStyle: React.CSSProperties = {
+    position: "absolute",
+    right: 12,
+    top: "50%",
+    transform: "translateY(-50%)",
+    pointerEvents: "none",
+    color: "rgba(255,255,255,0.75)",
+    fontSize: 14,
+    lineHeight: 1,
   };
 
   return (
@@ -219,51 +278,23 @@ export default function BarcodeScanner({
         width: "100%",
         overflow: "hidden",
         background: "black",
-        borderRadius: "8px",
+        borderRadius: "12px",
         position: "relative",
       }}
     >
-      {active && (
-        <div
-          style={{
-            position: "absolute",
-            top: 10,
-            left: 10,
-            right: 10,
-            display: "flex",
-            gap: 8,
-            zIndex: 20,
-          }}
-        >
-          <button
-            onClick={flipCamera}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 8,
-              border: "1px solid rgba(255,255,255,0.35)",
-              background: "rgba(0,0,0,0.55)",
-              color: "white",
-              fontSize: 12,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Girar cámara
-          </button>
+      {active && devices.length > 1 && (
+        <div style={overlayBarStyle}>
+          <div style={labelStyle}>
+            <span style={dotStyle} />
+            Cámara
+          </div>
 
-          {devices.length > 1 && (
+          <div style={selectWrapStyle}>
             <select
               value={selectedDeviceId ?? ""}
               onChange={(e) => onSelectDevice(e.target.value)}
-              style={{
-                flex: 1,
-                padding: "8px 10px",
-                borderRadius: 8,
-                border: "1px solid rgba(255,255,255,0.35)",
-                background: "rgba(0,0,0,0.55)",
-                color: "white",
-                fontSize: 12,
-              }}
+              style={selectStyle}
+              aria-label="Seleccionar cámara"
             >
               <option value="" disabled>
                 Selecciona cámara…
@@ -274,7 +305,8 @@ export default function BarcodeScanner({
                 </option>
               ))}
             </select>
-          )}
+            <span style={chevronStyle}>▾</span>
+          </div>
         </div>
       )}
 
@@ -286,25 +318,7 @@ export default function BarcodeScanner({
         playsInline
       />
 
-      {active && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 10,
-            left: 0,
-            right: 0,
-            textAlign: "center",
-            color: "white",
-            fontSize: 12,
-            pointerEvents: "none",
-            textShadow: "1px 1px 2px black",
-            padding: "0 12px",
-          }}
-        >
-          Si se abre la frontal, presiona “Girar cámara”. Si hay varias traseras,
-          selecciona la principal.
-        </div>
-      )}
+      
     </div>
   );
 }
