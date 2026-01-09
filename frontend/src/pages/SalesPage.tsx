@@ -36,7 +36,7 @@ const SalesPage = () => {
   const [ticketData, setTicketData] = useState<TicketData | null>(null);
 
   const IVA_RATE = 0.19; 
-  const API_URL = import.meta.env.VITE_API_URL || "/api";
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
     fetchProducts();

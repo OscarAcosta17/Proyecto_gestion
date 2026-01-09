@@ -72,7 +72,7 @@ export default function StatsPage() {
   const [growthInsight, setGrowthInsight] = useState("");
   const [growthLoading, setGrowthLoading] = useState(false);
 
-  const API_URL = import.meta.env.VITE_API_URL || "/api";
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   const token = localStorage.getItem("token");
 
   useEffect(() => {
