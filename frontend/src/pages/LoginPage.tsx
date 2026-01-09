@@ -97,14 +97,16 @@ const LoginPage = () => {
     return isValid;
   };
 
-  // --- AQUÍ ESTABA EL ERROR ---
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateForm()) return;
     
     // CORRECCIÓN: Usamos ruta relativa "/api" siempre.
     // Esto obliga a pasar por el Proxy de Vite que configuramos.
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';; 
+    let backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';; 
+    if (backendUrl.endsWith('/')) {
+      backendUrl = backendUrl.slice(0, -1);
+    }
     
     const endpoint = isLogin ? '/login' : '/register';
     const bodyData = isLogin ? { email: formData.email, password: formData.password } : formData;
@@ -133,8 +135,6 @@ const LoginPage = () => {
       }
     } catch (error: any) {
       setGlobalError(error.message || 'Error de conexión con el servidor');
-      // Opcional: Descomenta esto si quieres ver el error real en el móvil
-      // alert("Error conexión: " + error.message);
     }
   };
   // ------------------------------
