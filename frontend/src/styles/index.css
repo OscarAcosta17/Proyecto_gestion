@@ -1,26 +1,31 @@
-/* src/index.css */
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  
-  /* Colores base para asegurar consistencia */
-  background-color: #121212; 
-  color: rgba(255, 255, 255, 0.87);
+/* =========================================
+   FIX GLOBAL: HABILITAR SCROLL EN TODO EL SITIO
+   ========================================= */
+
+/* 1. Desbloquear el navegador */
+html, body {
+    overflow-y: auto !important; /* Permite scroll vertical */
+    overflow-x: hidden !important; /* Evita scroll lateral */
+    height: auto !important; /* Deja que la página crezca */
+    position: static !important;
+    touch-action: auto !important; /* Habilita gestos táctiles */
 }
 
-body {
-  margin: 0;
-  padding: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  width: 100%; /* Asegura ancho total */
+/* 2. Desbloquear los contenedores principales */
+/* (Añade aquí las clases de tus contenedores principales) */
+#root, 
+.app, 
+.master-container, 
+.dashboard-content {
+    height: auto !important; /* Que crezcan según el contenido */
+    min-height: 100vh; /* Al menos el alto de la pantalla */
+    overflow: visible !important; /* No ocultar lo que sobra */
+    position: relative !important;
 }
 
-#root {
-  width: 100%;
-  max-width: 100%; /* AQUÍ ESTABA EL PROBLEMA ANTES */
-  margin: 0;
-  padding: 0;
-  text-align: left; /* Quitamos el centrado forzado */
+/* 3. Arreglo específico para móviles */
+@media (max-width: 900px) {
+    .master-container, .app {
+        padding-bottom: 100px !important; /* Espacio extra abajo para no chocar con bordes del móvil */
+    }
 }

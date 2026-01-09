@@ -97,10 +97,15 @@ const LoginPage = () => {
     return isValid;
   };
 
+  // --- AQUÍ ESTABA EL ERROR ---
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateForm()) return;
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    
+    // CORRECCIÓN: Usamos ruta relativa "/api" siempre.
+    // Esto obliga a pasar por el Proxy de Vite que configuramos.
+    const backendUrl = '/api'; 
+    
     const endpoint = isLogin ? '/login' : '/register';
     const bodyData = isLogin ? { email: formData.email, password: formData.password } : formData;
     
@@ -128,8 +133,11 @@ const LoginPage = () => {
       }
     } catch (error: any) {
       setGlobalError(error.message || 'Error de conexión con el servidor');
+      // Opcional: Descomenta esto si quieres ver el error real en el móvil
+      // alert("Error conexión: " + error.message);
     }
   };
+  // ------------------------------
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -175,9 +183,9 @@ const LoginPage = () => {
         {/* HERO */}
         <section className="hero-fullscreen">
           <div className="hero-content">
-              <div className="badge-new">🚀 Versión Enterprise 2026</div>
+              <div className="badge-new">POTENCIA TU NEGOCIO </div>
               <h1 className="hero-headline">
-                  El sistema operativo <br/> de tu éxito.
+                  Todo tu negocio en una <br/> sola plataforma.
               </h1>
 
               {/* BADGE GEMINI CON LOGO SVG */}
@@ -207,7 +215,6 @@ const LoginPage = () => {
               </div>
               
               <div className="trust-badges">
-                  <span>🛡️ Seguridad Bancaria</span>
                   <span>⚡ Uptime 99.9%</span>
                   <span>🤝 Soporte Dedicado</span>
               </div>
@@ -365,11 +372,11 @@ const LoginPage = () => {
                         {/* CAMPOS COMUNES (SIEMPRE VISIBLES) */}
                         <div className="input-field">
                             <input type="email" name="email" required placeholder=" " value={formData.email} onChange={handleChange} />
-                            <label>Correo Corporativo</label>
+                            <label>Correo Electrónico</label>
                         </div>
                         <div className="input-field">
                             <input type="password" name="password" required placeholder=" " value={formData.password} onChange={handleChange} />
-                            <label>Contraseña Maestra</label>
+                            <label>Contraseña</label>
                         </div>
 
                         {/* CAMPOS EXTRA INFERIORES (TELÉFONO/DIRECCIÓN) */}
@@ -403,7 +410,7 @@ const LoginPage = () => {
                         </div>
 
                         <button type="submit" className="btn-cyber-submit">
-                            {isLogin ? 'Autenticar' : 'Procesar Alta'}
+                            {isLogin ? 'Iniciar Sesión' : 'Registrarse'}
                             <span className="btn-glare"></span>
                         </button>
                     </form>

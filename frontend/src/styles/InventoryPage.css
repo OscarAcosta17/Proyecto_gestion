@@ -316,3 +316,106 @@ td { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); color:
     animation: fadeIn 0.3s ease-out;
     margin-top: 15px; /* Espacio cuando se despliega */
 }
+
+/* =========================================
+   CORRECCIÓN RESPONSIVE (MÓVIL)
+   ========================================= */
+@media (max-width: 900px) {
+  
+  /* 1. ARREGLO DEL LAYOUT PRINCIPAL */
+  .app {
+    padding: 10px; /* Reducir padding global */
+    overflow-x: hidden; /* Evitar scroll horizontal indeseado */
+  }
+
+  .grid {
+    display: flex; /* Cambiamos Grid por Flex vertical */
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+  }
+
+  .left-column, 
+  .right-column {
+    width: 100%; /* Forzar ancho completo */
+    min-width: 0; /* Truco de CSS para evitar desbordes en flex items */
+  }
+
+  /* 2. HEADER COMPACTO */
+  .header-container {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+    padding: 15px;
+  }
+  
+  .header-content h1 {
+    font-size: 1.4rem;
+  }
+  
+  .header-container button {
+    width: 100%; /* Botón "Nuevo Producto" ancho completo */
+  }
+
+  /* 3. TARJETAS KPI (Mantener 2 columnas pero más pequeñas) */
+  .kpi-container {
+    gap: 10px;
+  }
+  .kpi-card {
+    padding: 15px;
+  }
+  .kpi-value {
+    font-size: 1.3rem;
+  }
+
+  /* 4. TABLA RESPONSIVA */
+  .table-wrapper {
+    /* Esto es vital para que la tabla no empuje el ancho de la pantalla */
+    width: 100%;
+    max-width: calc(100vw - 25px); /* Restamos el padding de la app */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+  }
+  
+  th, td {
+    padding: 12px 10px; /* Celdas más compactas */
+    font-size: 0.8rem;
+  }
+
+  /* 5. CONTROLES DE TABLA (Búsqueda y Filtros) */
+  .table-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .search-wrapper, 
+  .filter-toggle {
+    width: 100%; /* Inputs anchos */
+    box-sizing: border-box;
+  }
+
+  /* 6. MODAL (Ajuste para móviles) */
+  .modal-content {
+    width: 90%;
+    padding: 20px;
+    max-height: 90vh; /* Evitar que se salga por arriba/abajo */
+    overflow-y: auto;
+  }
+
+  .modal-tabs-container {
+    border-radius: 25px; /* Ajuste visual */
+  }
+  
+  .tab-option {
+    font-size: 0.85rem; /* Texto más pequeño en selector */
+    padding: 8px 0;
+  }
+  
+  /* 7. INPUTS DE STOCK (Cajas y Unidades) */
+  .box-inputs-row {
+    gap: 5px;
+  }
+  .box-x {
+    margin: 0 2px;
+  }
+}

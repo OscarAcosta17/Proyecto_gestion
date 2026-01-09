@@ -16,19 +16,25 @@ services:
       retries: 5
 
   # --- Backend (FastAPI) ---
+  # --- Backend (FastAPI) ---
   backend:
     build: ./backend
     container_name: inventory_backend
     volumes:
       - ./backend:/app
+    # --- CAMBIO IMPORTANTE: Entrar a la carpeta src ---
+    working_dir: /app/src
+    # --------------------------------------------------
     ports:
-      - "0.0.0.0:8000:8000" # <--- CAMBIO REAL: Escucha en todas las IPs de la red
+      - "0.0.0.0:8000:8000"
     env_file:
       - .env
+    # El comando se mantiene igual, pero ahora se ejecutará DENTRO de src
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       db:
         condition: service_healthy
-
+  # --- Frontend (React + Vite) ---
   # --- Frontend (React + Vite) ---
   frontend:
     build: ./frontend
@@ -37,11 +43,24 @@ services:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "0.0.0.0:5173:5173" # <--- CAMBIO REAL: Abre el puerto al celular
+      - "0.0.0.0:5173:5173"
     environment:
       - CHOKIDAR_USEPOLLING=true
+    # AGREGA ESTA LÍNEA (Fuerza a Vite a aceptar conexiones externas)
+    command: npm run dev -- --host 0.0.0.0
     depends_on:
       - backend
+
+  # --- Cloudflare Tunnel ---
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: nexus_tunnel
+    # CAMBIO AQUÍ: Usamos "frontend" (nombre del servicio) en vez de "inventory_frontend"
+    command: tunnel --url http://frontend:5173
+    restart: unless-stopped
+    depends_on:
+      - frontend
+
 
 volumes:
   postgres_data:

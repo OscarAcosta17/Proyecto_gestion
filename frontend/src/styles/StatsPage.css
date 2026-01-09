@@ -651,20 +651,60 @@ body, html {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Responsive para el grid de inventario */
-@media (max-width: 900px) {
-  .inventory-grid-split {
-    grid-template-columns: 1fr; /* En móvil, uno debajo del otro */
-  }
-  
-  .stock-alert-banner {
-    flex-direction: column;
-    text-align: center;
-    gap: 15px;
-  }
-  
-  .alert-content {
-    flex-direction: column;
-    gap: 5px;
-  }
+/* 2. ARREGLO PARA MÓVILES (Tablas y Grids) */
+@media (max-width: 768px) {
+
+    /* Forzar una sola columna en todos los grids */
+    .charts-split-grid, 
+    .inventory-grid-split, 
+    .sales-bottom-grid,
+    .kpi-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+        display: flex !important; /* En móvil flex vertical funciona mejor para el scroll */
+        flex-direction: column !important;
+    }
+
+    /* ELIMINAR ALTURAS FIJAS QUE OCULTAN CONTENIDO */
+    /* El problema del historial y zombies es que tenían height fijo o limitado */
+    .ranking-panel, 
+    .chart-wrapper,
+    .panel-card {
+        height: auto !important; /* Dejar que crezca según el contenido */
+        min-height: auto !important;
+        max-height: none !important; /* Quitar límites */
+    }
+
+    .header-text {
+      margin-left: 25px;
+    }
+    /* ARREGLAR TABLAS (Historial y Zombies) */
+    .table-responsive-wrapper {
+        width: 100%;
+        overflow-x: auto; /* Permitir scroll horizontal solo en la tabla */
+        -webkit-overflow-scrolling: touch; /* Scroll suave en iPhone */
+        margin-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    .cyber-table {
+        width: 100%;
+        min-width: 300px; /* Asegurar ancho mínimo para que no se aplaste */
+    }
+
+    /* Reducir tamaño de letra y relleno para que quepa más info */
+    .cyber-table th, 
+    .cyber-table td {
+        padding: 10px 8px !important; /* Menos relleno */
+        font-size: 0.8rem !important; /* Letra más pequeña */
+    }
+
+    .cyber-table th {
+        white-space: nowrap; /* Títulos en una sola línea */
+    }
+
+    /* Ajuste específico para la lista de Zombies */
+    .inventory-grid-split .panel-card {
+        overflow: visible !important;
+    }
 }

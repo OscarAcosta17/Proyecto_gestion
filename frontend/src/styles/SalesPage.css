@@ -347,97 +347,72 @@
   .ticket-actions, .no-print { display: none; }
 }
 
-/* --- RESPONSIVE MOBILE/TABLET --- */
+/* --- RESPONSIVE MOBILE --- */
 @media (max-width: 900px) {
-  /* 1. Contenedor Principal: Columna vertical */
+  
   .sales-container {
     flex-direction: column;
-    height: 100vh; /* Mantiene la altura fija de la pantalla */
+    position: relative; /* Para posicionar el carrito flotante */
   }
 
-  /* 2. Sección Carrito (Se va arriba pero limitado) */
-  .cart-section {
-    width: 100%;
-    order: -1; /* Poner visualmente primero */
-    height: 35vh; /* Ocupa el 35% superior de la pantalla */
-    min-height: unset;
-    border-left: none;
-    border-bottom: 2px solid #333;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-    z-index: 10;
-  }
-
-  .cart-header {
-    padding: 10px 15px; /* Menos padding */
-  }
-  
-  .cart-header h2 {
-    font-size: 1.2rem;
-    margin: 0;
-  }
-
-  .cart-items-container {
-    padding: 10px;
-  }
-
-  /* Ajustar items del carrito para que sean más compactos */
-  .cart-item {
-    padding: 10px;
-    margin-bottom: 10px;
-  }
-  
-  .qty-controls {
-    height: 32px; /* Botones más pequeños */
-    margin: 0 10px;
-  }
-
-  .cart-footer {
-    padding: 10px 15px;
-  }
-  
-  .btn-pay {
-    margin-top: 5px;
-    padding: 10px;
-    font-size: 1rem;
-  }
-
-  /* 3. Sección Catálogo (Se va abajo y ocupa el resto) */
+  /* 1. Catálogo ocupa toda la pantalla (menos el espacio del carrito abajo) */
   .catalog-section {
     width: 100%;
-    height: 65vh; /* Ocupa el 65% restante */
     padding: 15px;
+    padding-bottom: 140px; /* Espacio extra abajo para que el carrito no tape productos */
     border-right: none;
   }
 
-  .search-input {
-    padding: 10px 15px; /* Input más compacto */
-  }
-
-  /* 4. Grid de Productos (2 columnas en celular) */
   .products-grid {
-    /* Reduce el min-width de 200px a 135px para que quepan 2 en iPhone/Android */
-    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); 
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Tarjetas más pequeñas */
     gap: 10px;
   }
 
   .product-card-pos {
-    height: 180px; /* Tarjetas más bajitas */
-    padding: 15px 10px;
+    height: 200px;
+    padding: 15px;
   }
 
   .card-icon-placeholder {
-    width: 50px;
-    height: 50px;
-    font-size: 1.8rem;
-    margin-bottom: 10px;
+    width: 60px; height: 60px; font-size: 2rem;
   }
 
-  .product-info h3 {
-    font-size: 0.95rem;
+  /* 2. Carrito Flotante Inferior */
+  .cart-section {
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%; min-width: 100%;
+    height: auto;
+    max-height: 50vh; /* Máximo media pantalla si está expandido */
+    background: #111;
+    border-top: 2px solid #2ecc71;
+    border-left: none;
+    z-index: 100;
+    transition: transform 0.3s;
   }
 
-  .pos-price-tag {
-    padding: 5px 15px;
-    font-size: 0.9rem;
+  /* Footer siempre visible */
+  .cart-footer {
+    padding: 15px;
+    background: #111;
+  }
+
+  /* Ocultar lista de items por defecto en móvil para ahorrar espacio (Opcional) */
+  /* Si quieres ver los items, tendrías que añadir un botón de "Ver detalles" */
+  .cart-items-container {
+    display: none; /* Oculto por defecto para ver solo el botón de pago */
+  }
+  
+  /* Si hay items, mostramos un resumen pequeño */
+  .cart-header {
+    display: none;
+  }
+
+  .total-row {
+    margin-top: 0; padding-top: 0; border: none; font-size: 1.2rem;
+  }
+
+  .btn-pay {
+    margin-top: 10px; padding: 12px;
   }
 }
