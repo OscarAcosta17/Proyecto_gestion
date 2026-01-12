@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/SalesPage.css";
+// 1. IMPORTAR EL HOOK
+import { useAuth } from "../context/AuthContext";
 
 // --- INTERFACES ---
 interface Product {
@@ -27,6 +29,9 @@ const SalesPage = () => {
   document.title = "Punto de Venta | NexusERP";
   const navigate = useNavigate();
   
+  // 2. OBTENER apiCall DEL CONTEXTO
+  const { apiCall } = useAuth();
+
   // Estados de Negocio
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -47,9 +52,10 @@ const SalesPage = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch(`${API_URL}/products`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      // 3. REEMPLAZO DE FETCH POR apiCall
+      // Ya no es necesario poner headers manuales
+      const res = await apiCall(`${API_URL}/products`);
+      
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
@@ -116,12 +122,10 @@ const SalesPage = () => {
     };
 
     try {
-      const res = await fetch(`${API_URL}/sales`, {
+      // 4. REEMPLAZO DE FETCH POR apiCall (Guardar Venta)
+      // Esto protege el carrito: si falla por auth, sale el popup y no pierdes la venta
+      const res = await apiCall(`${API_URL}/sales`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: JSON.stringify(saleData),
       });
 
@@ -146,6 +150,7 @@ const SalesPage = () => {
       fetchProducts(); // Actualizar stocks
 
     } catch (error: any) {
+      // Si apiCall manejó el 401, aquí no llegamos, así que solo mostramos otros errores
       alert(`Error: ${error.message}`);
     } finally {
       setLoading(false);

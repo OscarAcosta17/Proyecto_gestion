@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-// IMPORTANTE: Asegúrate de que updateProduct esté en tu api.ts
+// 1. RESTAURAMOS TUS IMPORTS ORIGINALES (No los borramos)
 import { getProducts, createProduct, updateStock, updateProduct } from "../services/api";
 import BarcodeScanner from "../components/BarcodeScanner";
 import { exportToExcel, exportToPDF } from "../components/exportUtils"; 
 import "../styles/InventoryPage.css"; 
+// 2. IMPORTAMOS EL HOOK DE SEGURIDAD
+import { useAuth } from "../context/AuthContext";
 
 interface Product {
   id: number;
@@ -18,6 +20,10 @@ interface Product {
 const InventoryPage = () => {
   document.title = "Inventario | NexusERP";
   const navigate = useNavigate();
+
+  // 3. OBTENEMOS LA FUNCIÓN DE VERIFICACIÓN
+  const { apiCall } = useAuth();
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   
   const [products, setProducts] = useState<Product[]>([]);
   const [scannerActive, setScannerActive] = useState(false);
@@ -41,7 +47,7 @@ const InventoryPage = () => {
   const [boxDetails, setBoxDetails] = useState({ boxes: 1, unitsPerBox: 1 });
   const [quantityInput, setQuantityInput] = useState(0);
 
-  // --- NUEVO: ESTADO PARA PRECIOS EN EL MODAL ---
+  // Estado para precios en el modal
   const [modalPrices, setModalPrices] = useState({ cost: 0, sale: 0 });
 
   const [formData, setFormData] = useState({
@@ -52,12 +58,18 @@ const InventoryPage = () => {
 
   const loadProducts = async () => {
     try {
+      // 4. VERIFICACIÓN DE SESIÓN ANTES DE CARGAR
+      // Hacemos una llamada ligera. Si falla (401), apiCall activa el popup.
+      const check = await apiCall(`${API_URL}/products?limit=1`); 
+      if (check.status === 401) return; // Si expiró, no intentamos cargar y esperamos el re-login
+
+      // Si todo está bien, usamos TU función original
       const data = await getProducts();
       setProducts(data);
     } catch (error) { console.error(error); }
   };
 
-  // --- LÓGICA DE ORDENAMIENTO ---
+  // --- LÓGICA DE ORDENAMIENTO (INTACTA) ---
   const visibleProducts = useMemo(() => {
     let filtered = products;
     if (!showZeroStock) filtered = filtered.filter(p => p.stock > 0);
@@ -102,7 +114,6 @@ const InventoryPage = () => {
       setQuantityInput(0);
       setBoxDetails({ boxes: 1, unitsPerBox: 1 });
       
-      // Cargar precios actuales para editar
       setModalPrices({ 
           cost: product.cost_price, 
           sale: product.sale_price 
@@ -127,12 +138,10 @@ const InventoryPage = () => {
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // VALIDACIÓN: Campos obligatorios
     if (!formData.barcode.trim() || !formData.name.trim()) { 
         showFeedback("❌ El código y nombre son obligatorios.", 'out'); 
         return; 
     }
-    // VALIDACIÓN: Precios > 0
     if (formData.cost_price <= 0 || formData.sale_price <= 0) { 
         showFeedback("❌ Los precios deben ser mayores a 0.", 'out'); 
         return; 
@@ -142,7 +151,13 @@ const InventoryPage = () => {
     if (stockMode === 'box') finalStock = boxDetails.boxes * boxDetails.unitsPerBox;
     
     try { 
+        // 5. VERIFICACIÓN DE SESIÓN ANTES DE CREAR
+        const check = await apiCall(`${API_URL}/products?limit=1`);
+        if (check.status === 401) return; // Detener si expiró
+
+        // USAMOS TU FUNCIÓN ORIGINAL
         await createProduct({ ...formData, stock: finalStock }); 
+        
         showFeedback("✅ Producto creado", 'in'); 
         setFormData({barcode:"",name:"",stock:0,cost_price:0,sale_price:0}); 
         loadProducts(); 
@@ -156,7 +171,11 @@ const InventoryPage = () => {
     const userId = Number(localStorage.getItem('userId')) || 0;
     
     try { 
-        // 1. Actualizar Stock (si hay cantidad)
+        // 6. VERIFICACIÓN DE SESIÓN ANTES DE ACTUALIZAR
+        const check = await apiCall(`${API_URL}/products?limit=1`);
+        if (check.status === 401) return; // Detener si expiró
+
+        // USAMOS TUS FUNCIONES ORIGINALES
         if (qty > 0) {
             await updateStock({ 
                 barcode: selectedProduct.barcode, 
@@ -166,7 +185,6 @@ const InventoryPage = () => {
             });
         }
 
-        // 2. Actualizar Precios (si cambiaron)
         if (modalPrices.cost !== selectedProduct.cost_price || modalPrices.sale !== selectedProduct.sale_price) {
              await updateProduct(selectedProduct.id, {
                  cost_price: modalPrices.cost,

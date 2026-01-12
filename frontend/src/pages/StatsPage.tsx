@@ -16,6 +16,8 @@ import {
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import "../styles/StatsPage.css";
 import { getGeminiAnalysis } from '../services/api'; 
+// 1. IMPORTAR EL HOOK
+import { useAuth } from '../context/AuthContext';
 
 // --- ICONOS ---
 const ArrowLeft = () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>;
@@ -68,6 +70,10 @@ const BADGE_STYLES = [
 export default function StatsPage() {
     document.title = "Estadísticas | NexusERP";
   const navigate = useNavigate();
+  
+  // 2. OBTENER apiCall DEL CONTEXTO
+  const { apiCall } = useAuth();
+
   const [activeTab, setActiveTab] = useState<'sales' | 'inventory'>('sales');
   const [listFilter, setListFilter] = useState<'recent' | 'daily' | 'weekly' | 'monthly'>('recent');
   const [loading, setLoading] = useState(true);
@@ -96,11 +102,12 @@ export default function StatsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const headers = { "Authorization": `Bearer ${token}` };
+        // 3. REEMPLAZO DE FETCH POR apiCall
+        // apiCall añade el token y verifica si expiró automáticamente
         const [invRes, salesRes, prodRes] = await Promise.all([
-            fetch(`${API_URL}/dashboard/stats`, { headers }),
-            fetch(`${API_URL}/sales/stats?range=monthly`, { headers }),
-            fetch(`${API_URL}/products`, { headers })
+            apiCall(`${API_URL}/dashboard/stats`),
+            apiCall(`${API_URL}/sales/stats?range=monthly`),
+            apiCall(`${API_URL}/products`)
         ]);
 
         if (invRes.ok) setInvStats(await invRes.json());
@@ -114,7 +121,7 @@ export default function StatsPage() {
       }
     };
     fetchData();
-  }, [API_URL, token]);
+  }, [API_URL, token]); // apiCall es estable, no es estrictamente necesario en dep
 
   // --- LÓGICA IA ---
   const handleCostAnalysis = async () => {

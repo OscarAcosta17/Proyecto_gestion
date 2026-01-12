@@ -19,6 +19,8 @@ from .database import engine, Base, get_db
 from .models import User, Product, SupportTicket, MovementHistory, Sale, SaleItem, GlobalMessage
 from .security import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM
 from .schemas import SaleCreate, SaleResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from src.security import verify_password, create_access_token
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Inventory API")
@@ -693,3 +695,22 @@ def get_my_tickets(db: Session = Depends(get_db), current_user: User = Depends(g
 @app.get("/announcements")
 def get_announcements(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return db.query(GlobalMessage).order_by(GlobalMessage.created_at.desc()).limit(5).all()
+
+@app.post("/token")
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    # Buscamos al usuario por email (form_data.username trae el email)
+    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    
+    # Verificamos si existe y si la contraseña coincide
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales incorrectas",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Si todo está bien, creamos el token nuevo
+    access_token = create_access_token(subject=user.email)
+    
+    # Retornamos el JSON que espera el Frontend
+    return {"access_token": access_token, "token_type": "bearer"}

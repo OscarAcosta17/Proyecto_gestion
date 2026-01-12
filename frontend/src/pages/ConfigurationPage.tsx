@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/ConfigurationPage.css"; // Asegúrate de crear este CSS
+// 1. IMPORTAR EL HOOK
+import { useAuth } from "../context/AuthContext";
 
 // Icono de flecha para volver
 const ArrowLeft = () => (
@@ -9,6 +11,10 @@ const ArrowLeft = () => (
 
 export default function ConfigurationPage() {
   const navigate = useNavigate();
+  
+  // 2. OBTENER apiCall DEL CONTEXTO
+  const { apiCall } = useAuth();
+  
   // Estado para controlar qué sección está abierta
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,9 +35,10 @@ export default function ConfigurationPage() {
     document.title = "Configuración | NexusERP";
     const fetchUserData = async () => {
       try {
-        const response = await fetch(`${API_URL}/user/me`, {
-          headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        });
+        // 3. REEMPLAZO DE FETCH POR apiCall (Carga de datos)
+        // Ya no necesitamos enviar headers manuales
+        const response = await apiCall(`${API_URL}/user/me`);
+        
         if (response.ok) {
           const data = await response.json();
           setUserData({ ...data, password: "" });
@@ -48,14 +55,13 @@ export default function ConfigurationPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${API_URL}/user/update`, {
+      // 4. REEMPLAZO DE FETCH POR apiCall (Actualización de datos)
+      const response = await apiCall(`${API_URL}/user/update`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        },
+        // apiCall añade automáticamente Authorization y Content-Type si hay body (pero no está de más dejarlo explícito si prefieres)
         body: JSON.stringify(userData)
       });
+      
       if (response.ok) alert("✅ Datos actualizados correctamente");
       else alert("❌ Error al actualizar");
     } catch (error) {

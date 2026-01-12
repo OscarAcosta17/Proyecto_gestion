@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/SupportPage.css'; // Asegúrate de que el nombre coincida
+import '../styles/SupportPage.css'; 
 import { createTicket } from '../services/api'; 
+// 1. AÑADIR IMPORT
+import { useAuth } from '../context/AuthContext';
 
 // Icono de flecha simple
 const ArrowLeft = () => (
@@ -11,6 +13,11 @@ const ArrowLeft = () => (
 const SupportPage = () => {
   document.title = "Soporte | NexusERP";
   const navigate = useNavigate();
+  
+  // 2. AÑADIR USO DEL HOOK
+  const { apiCall } = useAuth();
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
   const [loading, setLoading] = useState(false);
   const [showError, setShowError] = useState(false);
 
@@ -39,6 +46,18 @@ const SupportPage = () => {
 
     setLoading(true);
     try {
+      // 3. AÑADIR VERIFICACIÓN DE SESIÓN (La Lógica Nueva)
+      // Hacemos una llamada ligera para verificar que el token siga vivo.
+      // Si falla (401), apiCall activa el Popup Rojo automáticamente.
+      const verifySession = await apiCall(`${API_URL}/user/me`);
+      
+      // Si la sesión expiró (401), detenemos todo aquí para no causar errores en createTicket
+      if (verifySession.status === 401) {
+          setLoading(false);
+          return; 
+      }
+
+      // --- TU LÓGICA ORIGINAL INTACTA ---
       await createTicket({
           user_id: formData.user_id,
           issue_type: formData.issue_type,

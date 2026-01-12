@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import "../styles/DashboardPage.css"; // Asegúrate de crear/actualizar este archivo
+import "../styles/DashboardPage.css"; 
 import AboutModal from "../components/AboutModal";
-import { getMyTickets, getAnnouncements } from "../services/api";
+
+// 1. IMPORTAR EL HOOK DE AUTH
+import { useAuth } from "../context/AuthContext";
 
 // Iconos SVG simples
 const BellIcon = () => (
@@ -13,8 +15,13 @@ const LogoutIcon = () => (
 );
 
 const DashboardPage = () => {
-    document.title = "Menú | NexusERP";
+  document.title = "Menú | NexusERP";
   const navigate = useNavigate();
+
+  // 2. OBTENER apiCall DEL CONTEXTO
+  const { apiCall } = useAuth(); 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
   const userName = localStorage.getItem("first_name") || "Usuario"; 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -38,8 +45,20 @@ const DashboardPage = () => {
 
   const loadNotifications = async () => {
     try {
-        const [tickets, announcements] = await Promise.all([getMyTickets(), getAnnouncements()]);
+        // 3. USAMOS apiCall PARA QUE EL POPUP DE SESIÓN FUNCIONE
+        // (Asumimos las rutas de tu backend, ajusta si son diferentes)
+        const [resTickets, resAnnouncements] = await Promise.all([
+            apiCall(`${API_URL}/support/tickets`), // Antes: getMyTickets()
+            apiCall(`${API_URL}/announcements`)    // Antes: getAnnouncements()
+        ]);
         
+        // Verificamos si respondieron bien (si es 401, el apiCall ya disparó el modal)
+        if (!resTickets.ok || !resAnnouncements.ok) return;
+
+        const tickets = await resTickets.json();
+        const announcements = await resAnnouncements.json();
+        
+        // PROCESAMIENTO DE DATOS (IGUAL QUE ANTES)
         const ticketNotifs = tickets
             .filter((t: any) => t.status === 'closed' || t.admin_response)
             .map((t: any) => ({
@@ -66,7 +85,7 @@ const DashboardPage = () => {
             setHasUnread(true);
         }
     } catch (error) {
-        console.error("Error cargando notificaciones");
+        console.error("Error cargando notificaciones", error);
     }
   };
 
@@ -81,7 +100,7 @@ const DashboardPage = () => {
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate("/"); // Asumiendo que el login está en la raíz o /login
+    navigate("/"); 
   };
 
   return (
@@ -192,7 +211,7 @@ const DashboardPage = () => {
                 <div className="card-arrow">→</div>
             </div>
 
-            {/* TARJETA SOPORTE (ANCHEA 2 COLUMNAS SI HAY ESPACIO) */}
+            {/* TARJETA SOPORTE */}
             <div className="bento-card menu-card wide" onClick={() => navigate('/support')} style={{ '--hover-color': '#9b59b6' } as React.CSSProperties}>
                 <div className="card-bg-icon">🎧</div>
                 <div className="card-content">
