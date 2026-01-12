@@ -9,6 +9,7 @@ const ArrowLeft = () => (
 );
 
 const SupportPage = () => {
+  document.title = "Soporte | NexusERP";
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showError, setShowError] = useState(false);

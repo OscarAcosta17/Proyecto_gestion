@@ -66,6 +66,7 @@ const BADGE_STYLES = [
 ];
 
 export default function StatsPage() {
+    document.title = "Estadísticas | NexusERP";
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'sales' | 'inventory'>('sales');
   const [listFilter, setListFilter] = useState<'recent' | 'daily' | 'weekly' | 'monthly'>('recent');

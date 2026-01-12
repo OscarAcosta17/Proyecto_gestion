@@ -49,6 +49,7 @@ const FaqItem = ({ question, answer }: { question: string, answer: string }) => 
 };
 
 const LoginPage = () => {
+  document.title = "Inicio | NexusERP";
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [isAboutOpen, setIsAboutOpen] = useState(false);

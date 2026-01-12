@@ -13,6 +13,7 @@ const LogoutIcon = () => (
 );
 
 const DashboardPage = () => {
+    document.title = "Menú | NexusERP";
   const navigate = useNavigate();
   const userName = localStorage.getItem("first_name") || "Usuario"; 
   const [isModalOpen, setIsModalOpen] = useState(false);

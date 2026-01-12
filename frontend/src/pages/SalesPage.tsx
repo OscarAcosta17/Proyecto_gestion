@@ -24,6 +24,7 @@ interface TicketData {
 }
 
 const SalesPage = () => {
+  document.title = "Punto de Venta | NexusERP";
   const navigate = useNavigate();
   
   // Estados de Negocio

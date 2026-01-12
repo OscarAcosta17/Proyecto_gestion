@@ -16,6 +16,7 @@ interface Product {
 }
 
 const InventoryPage = () => {
+  document.title = "Inventario | NexusERP";
   const navigate = useNavigate();
   
   const [products, setProducts] = useState<Product[]>([]);

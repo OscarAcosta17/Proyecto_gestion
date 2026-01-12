@@ -26,6 +26,7 @@ export default function ConfigurationPage() {
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
+    document.title = "Configuración | NexusERP";
     const fetchUserData = async () => {
       try {
         const response = await fetch(`${API_URL}/user/me`, {
