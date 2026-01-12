@@ -377,12 +377,13 @@ def update_stock(update: StockUpdate, db: Session = Depends(get_db)):
 @app.post("/sales", response_model=SaleResponse)
 def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     
-    new_sale = Sale(user_id=current_user.id, total_amount=0)
+    # 1. Crear la estructura de la venta con el método de pago seleccionado
+    new_sale = Sale(user_id=current_user.id, total_amount=0, payment_method=sale_data.payment_method)
     db.add(new_sale)
     db.commit()
     db.refresh(new_sale)
 
-    total_sale_amount = 0
+    net_amount = 0 # Acumulador del valor Neto (suma de precios de productos)
 
     try:
         for item in sale_data.items:
@@ -394,9 +395,11 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db), current_us
             if product.stock < item.quantity:
                 raise HTTPException(status_code=400, detail=f"Stock insuficiente para {product.name}")
 
+            # Calculamos subtotal neto de esta línea
             subtotal = product.sale_price * item.quantity 
-            total_sale_amount += subtotal
+            net_amount += subtotal
 
+            # Creamos el registro del item vendido
             sale_item = SaleItem(
                 sale_id=new_sale.id,
                 product_id=product.id,
@@ -406,8 +409,10 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db), current_us
             )
             db.add(sale_item)
 
+            # Descontamos stock
             product.stock -= item.quantity
             
+            # Registramos el movimiento en el historial
             history = MovementHistory(
                 product_id=product.id,
                 movement_type="venta", 
@@ -417,7 +422,13 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db), current_us
             )
             db.add(history)
 
-        new_sale.total_amount = total_sale_amount
+        # --- CÁLCULO FINAL CON IVA (19%) ---
+        iva_amount = net_amount * 0.19
+        total_final = net_amount + iva_amount
+
+        # Actualizamos la venta con el Total Final (Neto + IVA)
+        new_sale.total_amount = int(total_final)
+        
         db.commit()
         db.refresh(new_sale)
         
@@ -490,7 +501,6 @@ def get_dashboard_stats(db: Session = Depends(get_db), current_user: User = Depe
         "zombie_products": zombies_list # Nuevo Campo
     }
 
-# 2. ESTADÍSTICAS DE VENTAS (ACTUALIZADO: KPI EFICIENCIA + PAGOS)
 @app.get("/sales/stats")
 def get_sales_statistics(
     range: str = "recent", 
@@ -503,6 +513,7 @@ def get_sales_statistics(
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     start_of_week = start_of_day - timedelta(days=start_of_day.weekday())
 
+    # 1. Ingresos Básicos
     sales_today = db.query(func.sum(Sale.total_amount)).filter(
         Sale.user_id == current_user.id,
         Sale.date >= start_of_day
@@ -513,6 +524,7 @@ def get_sales_statistics(
         Sale.date >= start_of_month
     ).scalar() or 0
 
+    # 2. Utilidad (Ganancia)
     month_profit = db.query(
         func.sum((SaleItem.unit_price - func.coalesce(SaleItem.cost_price, Product.cost_price)) * SaleItem.quantity)
     ).join(Product).join(Sale).filter(
@@ -526,7 +538,7 @@ def get_sales_statistics(
         Sale.user_id == current_user.id
     ).scalar() or 0
 
-    # KPIs EFICIENCIA
+    # 3. KPIs de Eficiencia
     total_transactions = db.query(Sale).filter(
         Sale.user_id == current_user.id, Sale.date >= start_of_month
     ).count()
@@ -535,16 +547,33 @@ def get_sales_statistics(
         Sale.user_id == current_user.id, Sale.date >= start_of_month
     ).scalar() or 0
 
-    # ITEM 1: KPIs
     items_per_basket = round(total_items_sold / total_transactions, 1) if total_transactions > 0 else 0
     margin_percent = round((month_profit / sales_month * 100), 1) if sales_month > 0 else 0
     
-    # ITEM 2: Placeholder para Métodos de Pago (Espacio reservado)
+    # 4. CÁLCULO REAL DE MEDIOS DE PAGO (CORREGIDO)
+    # Filtramos las ventas del mes para el gráfico
+    month_sales_query = db.query(Sale).filter(
+        Sale.user_id == current_user.id,
+        Sale.date >= start_of_month
+    ).all()
+    
+    # Contamos manualmente para ser flexibles con mayúsculas/tildes
+    cash_count = 0
+    debit_count = 0
+    
+    for s in month_sales_query:
+        pm = (s.payment_method or "").lower() # Normalizamos a minúsculas
+        if "efectivo" in pm:
+            cash_count += 1
+        elif "debito" in pm or "débito" in pm: # Detecta con o sin tilde
+            debit_count += 1
+            
     payment_methods = {
-        "efectivo": 0,
-        "debito": 0
+        "efectivo": cash_count,
+        "debito": debit_count
     }
 
+    # 5. Historial de Ventas
     history_query = db.query(Sale).filter(
         Sale.user_id == current_user.id
     ).order_by(Sale.date.desc())
@@ -556,18 +585,27 @@ def get_sales_statistics(
     elif range == "monthly":
         sales_results = history_query.filter(Sale.date >= start_of_month).all()
     else: 
-        sales_results = history_query.limit(10).all()
+        sales_results = history_query.limit(20).all() # Aumenté el límite a 20
 
     history = []
     for sale in sales_results:
         item_count = sum(item.quantity for item in sale.items)
+
+        sale_profit = sum(
+            (item.unit_price - (item.cost_price or 0)) * item.quantity 
+            for item in sale.items
+        )
+
         history.append({
             "id": sale.id,
             "date": sale.date,
             "total": sale.total_amount,
-            "items_count": item_count
+            "items_count": item_count,
+            "payment_method": sale.payment_method or "Efectivo", # AQUÍ AGREGAMOS EL DATO FALTANTE
+            "profit": sale_profit
         })
 
+    # 6. Top Productos
     top_products_query = db.query(
         Product.name,
         func.sum(SaleItem.quantity).label("total_sold")
@@ -585,7 +623,6 @@ def get_sales_statistics(
         "total_profit": total_profit,
         "sales_history": history,
         "top_products": top_products,
-        # NUEVOS CAMPOS AGREGADOS
         "items_per_basket": items_per_basket,
         "margin_percent": margin_percent,
         "payment_methods": payment_methods

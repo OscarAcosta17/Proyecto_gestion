@@ -18,8 +18,9 @@ interface CartItem extends Product {
 interface TicketData {
   id: number;
   date: string;
-  total: number;
+  total: number; // Este TOTAL viene del backend ya con IVA incluido
   items: CartItem[];
+  payment_method: string;
 }
 
 const SalesPage = () => {
@@ -31,7 +32,8 @@ const SalesPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Estados del Ticket (Comprobante)
+  // Estados de UI (Modales)
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showTicket, setShowTicket] = useState(false);
   const [ticketData, setTicketData] = useState<TicketData | null>(null);
 
@@ -92,8 +94,16 @@ const SalesPage = () => {
   const { subtotalNeto, ivaTotal, totalPagar } = calculateTotals();
 
   // --- PROCESO DE VENTA ---
-  const handleCheckout = async () => {
+
+  // 1. Abrir Modal de Selección
+  const initiateCheckout = () => {
     if (cart.length === 0) return;
+    setShowPaymentModal(true);
+  };
+
+  // 2. Finalizar venta con el método elegido
+  const finalizeSale = async (method: "Efectivo" | "Débito") => {
+    setShowPaymentModal(false); 
     setLoading(true);
 
     const saleData = {
@@ -101,6 +111,7 @@ const SalesPage = () => {
         product_id: item.id,
         quantity: item.qty,
       })),
+      payment_method: method, // Enviamos "Débito" con tilde y mayúscula
     };
 
     try {
@@ -118,22 +129,20 @@ const SalesPage = () => {
         throw new Error(errorData.detail || "Error al procesar venta");
       }
 
-      const responseData = await res.json(); // ID y Fecha de la venta
+      const responseData = await res.json();
 
-      // 1. Guardamos datos para el Ticket
+      // Guardamos datos para el Ticket
       setTicketData({
         id: responseData.id,
         date: responseData.date,
-        total: responseData.total_amount,
-        items: [...cart] // Copiamos items actuales
+        total: responseData.total_amount, // Viene del backend ya con IVA
+        items: [...cart],
+        payment_method: method 
       });
 
-      // 2. Abrimos el Modal
       setShowTicket(true);
-
-      // 3. Limpiamos carrito y recargamos productos (stocks nuevos)
       setCart([]);
-      fetchProducts();
+      fetchProducts(); // Actualizar stocks
 
     } catch (error: any) {
       alert(`Error: ${error.message}`);
@@ -150,30 +159,15 @@ const SalesPage = () => {
 
   const handlePrint = () => {
     const originalTitle = document.title;
-
     if (ticketData) {
         const date = new Date(ticketData.date);
-
-        const formattedDate = date
-        .toLocaleDateString("es-CL")
-        .replace(/-/g, "")
-        .replace(/\//g, "-");
-
-        const formattedTime = date
-        .toLocaleTimeString("es-CL", { hour12: false })
-        .replace(/:/g, "-");
-
+        const formattedDate = date.toLocaleDateString("es-CL").replace(/-/g, "").replace(/\//g, "-");
+        const formattedTime = date.toLocaleTimeString("es-CL", { hour12: false }).replace(/:/g, "-");
         document.title = `Comprobante_${formattedDate}_${formattedTime}`;
     }
-
     window.print();
-
-    setTimeout(() => {
-        document.title = originalTitle;
-    }, 1000);
-    };
-
-
+    setTimeout(() => { document.title = originalTitle; }, 1000);
+  };
 
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -277,13 +271,58 @@ const SalesPage = () => {
           </div>
           <button
             className="btn-pay"
-            onClick={handleCheckout}
+            onClick={initiateCheckout}
             disabled={cart.length === 0 || loading}
           >
             {loading ? "Procesando..." : "💰 PAGAR AHORA"}
           </button>
         </div>
       </div>
+
+      {/* --- NUEVO MODAL: SELECCIÓN DE MÉTODO DE PAGO --- */}
+      {showPaymentModal && (
+        <div className="modal-overlay">
+          <div className="payment-modal-content">
+            <h2 className="payment-title">Finalizar Venta</h2>
+            
+            <div className="payment-options">
+                
+                {/* OPCIÓN 1: EFECTIVO (Estilo Verde Dashboard) */}
+                <button 
+                    className="payment-card-btn style-green"
+                    onClick={() => finalizeSale("Efectivo")}
+                >
+                    <div className="payment-icon-box">💵</div>
+                    <div className="payment-text-group">
+                        <span className="payment-label-small">Pago en Caja</span>
+                        <span className="payment-value-large">Efectivo</span>
+                    </div>
+                </button>
+                
+                {/* OPCIÓN 2: DÉBITO (Estilo Azul Dashboard) */}
+                <button 
+                    className="payment-card-btn style-blue"
+                    onClick={() => finalizeSale("Débito")}
+                >
+                    <div className="payment-icon-box">💳</div>
+                    <div className="payment-text-group">
+                        <span className="payment-label-small">Transbank / Tarjeta</span>
+                        <span className="payment-value-large">Débito o Crédito</span>
+                    </div>
+                </button>
+
+            </div>
+
+            {/* BOTÓN CANCELAR CON EFECTO ROJO */}
+            <button 
+                className="btn-payment-cancel"
+                onClick={() => setShowPaymentModal(false)}
+            >
+                Cancelar Operación
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* --- MODAL: COMPROBANTE DE PAGO --- */}
       {showTicket && ticketData && (
@@ -301,6 +340,11 @@ const SalesPage = () => {
               </div>
               
               <p style={{marginTop: '10px', fontSize: '0.8rem'}}>Ticket ID: #{ticketData.id}</p>
+              
+              {/* AQUÍ SE MUESTRA EL DÉBITO EN MAYÚSCULAS */}
+              <p style={{fontSize: '0.9rem', marginTop: '5px', fontWeight: 'bold', color: '#333'}}>
+                PAGO: {ticketData.payment_method.toUpperCase()}
+              </p>
             </div>
 
             <div className="ticket-divider"></div>
@@ -309,6 +353,7 @@ const SalesPage = () => {
               {ticketData.items.map((item, idx) => (
                 <div key={idx} className="ticket-row">
                   <span>{item.qty} x {item.name}</span>
+                  {/* PRECIO UNITARIO YA VIENE NETO, SOLO SE MULTIPLICA */}
                   <span>${((item.sale_price || 0) * item.qty).toLocaleString('es-CL')}</span>
                 </div>
               ))}
@@ -316,16 +361,28 @@ const SalesPage = () => {
 
             <div className="ticket-divider"></div>
 
+            {/* DESGLOSE DE IMPUESTOS */}
+            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#666', marginBottom: '4px'}}>
+              <span>Neto</span>
+              {/* Calculamos el neto dividiendo el TOTAL (que ya tiene IVA) por 1.19 */}
+              <span>${Math.round(ticketData.total / 1.19).toLocaleString('es-CL')}</span>
+            </div>
+            
+            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#666', marginBottom: '10px'}}>
+              <span>IVA (19%)</span>
+              {/* El IVA es la diferencia entre Total y Neto */}
+              <span>${(ticketData.total - Math.round(ticketData.total / 1.19)).toLocaleString('es-CL')}</span>
+            </div>
+
             <div className="ticket-total">
               <span>TOTAL</span>
               <span>${ticketData.total.toLocaleString('es-CL')}</span>
             </div>
 
             <div style={{marginTop: '20px', fontSize: '0.8rem', color: '#555', fontStyle: 'italic'}}>
-              <p>*** Gracias por su preferencia ***</p>
+              <p>*** Gracias por su compra ***</p>
             </div>
 
-            {/* BOTONES (Invisibles al imprimir) */}
             <div className="ticket-actions no-print">
               <button className="btn-print" onClick={handlePrint}>🖨️ Imprimir</button>
               <button className="btn-close-modal" onClick={closeTicket}>Nueva Venta ➜</button>

@@ -74,6 +74,7 @@ class Sale(Base):
 
     # Una venta tiene muchos items
     items = relationship("SaleItem", back_populates="sale")
+    payment_method = Column(String, nullable=False, default="efectivo")
 
 class SaleItem(Base):
     __tablename__ = "sale_items"

@@ -3,22 +3,26 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# --- CAMBIO PRINCIPAL: OBTENER URL COMPLETA ---
-# En Render/Supabase, la variable se llama usualmente "DATABASE_URL"
-# Si no existe (ej. en tu PC), intenta usar una local o SQLite por defecto
+# 1. Intentamos obtener la URL de Producción (Render/Supabase)
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
-# --- PARCHE PARA SUPABASE / RENDER ---
-# SQLAlchemy requiere que el protocolo sea "postgresql://", pero
-# algunos proveedores entregan "postgres://". Esto lo corrige automáticamente.
+# 2. Si NO existe (estamos en Local), construimos la URL usando las variables de Docker
+if not SQLALCHEMY_DATABASE_URL:
+    print("--- MODO LOCAL DETECTADO: Construyendo URL de Docker ---")
+    
+    # Leemos las variables del .env (o usamos defaults si no existen)
+    db_user = os.getenv("POSTGRES_USER", "postgres")
+    db_password = os.getenv("POSTGRES_PASSWORD", "password")
+    db_name = os.getenv("POSTGRES_DB", "inventory_db")
+    db_host = os.getenv("POSTGRES_HOST", "db") # "db" es el nombre del servicio en docker-compose
+
+    SQLALCHEMY_DATABASE_URL = f"postgresql://{db_user}:{db_password}@{db_host}:5432/{db_name}"
+    
+    print(f"--- Conectando a: postgresql://{db_user}:****@{db_host}:5432/{db_name} ---")
+
+# 3. Parche para Render (el mismo que tenías)
 if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-# Fallback de seguridad: Si por alguna razón no hay URL (estás probando local sin .env)
-if not SQLALCHEMY_DATABASE_URL:
-    # Puedes dejar esto vacío o poner una sqlite temporal para que no crashee al importar
-    print("ADVERTENCIA: No se encontró DATABASE_URL. Usando SQLite temporal.")
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
 # Crear el motor
 engine = create_engine(SQLALCHEMY_DATABASE_URL)

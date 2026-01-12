@@ -12,6 +12,7 @@ class SaleItemSchema(BaseModel):
 # Esto es lo que React nos envía al hacer clic en "Pagar"
 class SaleCreate(BaseModel):
     items: List[SaleItemSchema]
+    payment_method: str = "Efectivo"
 
 # Esto es lo que respondemos al Frontend (para mostrar el ticket o confirmación)
 class SaleResponse(BaseModel):

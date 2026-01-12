@@ -279,7 +279,7 @@
 .ticket-container {
   background: #fff; /* Ticket blanco clásico */
   color: #000;      /* Texto negro para imprimir bien */
-  width: 320px;     /* Ancho estándar de impresora térmica */
+  width: 400px;     /* Ancho estándar de impresora térmica */
   padding: 20px;
   font-family: 'Courier New', Courier, monospace; /* Fuente tipo ticket */
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -415,4 +415,157 @@
   .btn-pay {
     margin-top: 10px; padding: 12px;
   }
+}
+/* --- MODAL DE PAGO (Estilo Dashboard Cards) --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.9); /* Fondo muy oscuro para enfocar */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.payment-modal-content {
+  background: #0f1014; /* Mismo fondo oscuro del dashboard */
+  padding: 40px;
+  border-radius: 24px;
+  width: 450px;
+  border: 1px solid #1f2937; /* Borde gris muy sutil */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.payment-title {
+  color: #f3f4f6;
+  margin-bottom: 24px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: left; /* Alineado a la izquierda como el dashboard */
+}
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* --- ESTILO BASE DE LOS BOTONES (Igual a las cards superiores) --- */
+.payment-card-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background-color: #18181b; /* Gris oscuro tarjeta */
+  border: 1px solid #27272a;
+  padding: 16px 20px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.payment-card-btn:hover {
+  background-color: #27272a;
+  border-color: #3f3f46;
+  transform: translateY(-2px);
+}
+
+/* CAJA DEL ICONO */
+.payment-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+/* TEXTOS */
+.payment-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.payment-label-small {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: #9ca3af; /* Gris claro */
+  margin-bottom: 2px;
+}
+
+.payment-value-large {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* --- VARIANTES DE COLOR --- */
+
+/* Efecto Verde (Como Análisis Proyección) */
+.style-green .payment-icon-box {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+.style-green:hover .payment-icon-box {
+  background-color: rgba(16, 185, 129, 0.25);
+}
+
+/* Efecto Azul (Como Herramienta Costos) */
+.style-blue .payment-icon-box {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+.style-blue:hover .payment-icon-box {
+  background-color: rgba(59, 130, 246, 0.25);
+}
+
+/* --- Botón Cancelar Rediseñado --- */
+.btn-payment-cancel {
+  margin-top: 24px;
+  background: transparent;
+  border: 1px solid transparent; /* Borde invisible listo para la transición */
+  color: #6b7280; /* Gris discreto por defecto */
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  align-self: center;
+  padding: 12px 30px;
+  border-radius: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Efecto Rojo al pasar el mouse (Hover) */
+.btn-payment-cancel:hover {
+  background-color: rgba(239, 68, 68, 0.15); /* Rojo transparente */
+  color: #ef4444; /* Texto Rojo Brillante */
+  border-color: rgba(239, 68, 68, 0.3); /* Borde sutil rojo */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); /* Resplandor rojo */
+}
+
+/* Efecto al presionar (Active) */
+.btn-payment-cancel:active {
+  transform: scale(0.96);
+  background-color: rgba(239, 68, 68, 0.25);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
 }
