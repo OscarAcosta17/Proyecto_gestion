@@ -5,36 +5,60 @@
   --bg-card: #1e1e1e;
   --bg-input: #252525;
   --border-color: #333333;
-  
+
   /* NEONES VIBRANTES */
   --neon-green: #00e676;
   --neon-green-dark: #00a854;
   --neon-blue: #2979ff;
   --neon-red: #ff1744;
   --neon-yellow: #ffea00;
-  
+  --neon-orange: #ff9800;
+
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
 }
 
 * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
-/* 4. SCROLLBAR PERSONALIZADO */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-main); }
-::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #666; }
+/* =========================================================
+   1. BLOQUEO DE SCROLL GLOBAL (SOLICITADO)
+   Esto "apaga" el scrollbar del index.css y fija la app a la pantalla
+   ========================================================= */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* <--- AQUÍ BLOQUEAMOS EL SCROLL GLOBAL */
+}
 
 body {
   background-color: var(--bg-main);
   color: var(--text-primary);
-  margin: 0;
   background-image: radial-gradient(circle at 10% 20%, rgba(0, 230, 118, 0.02) 0%, transparent 20%),
                     radial-gradient(circle at 90% 80%, rgba(41, 121, 255, 0.02) 0%, transparent 20%);
   background-attachment: fixed;
 }
 
-.app { padding: 20px 30px; min-height: 100vh; display: flex; flex-direction: column; gap: 25px; }
+/* El contenedor principal ocupa el 100% del alto disponible */
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 30px;
+  gap: 25px;
+  overflow: hidden; /* Asegura que nada se salga del viewport */
+}
+
+/* =========================================================
+   2. SCROLLBARS PERSONALIZADOS
+   ========================================================= */
+/* Esto estiliza TODAS las barras de scroll que aparezcan dentro de la app */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-main); }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #666; }
+
 
 /* ANIMACIONES */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -42,26 +66,75 @@ body {
 
 /* HEADER */
 .header-container {
-  background-color: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color);
-  padding: 15px 25px; display: flex; justify-content: space-between; align-items: center;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3); animation: slideUp 0.3s ease-out;
+  flex-shrink: 0; /* Evita que el header se aplaste */
+  background-color: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  padding: 15px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  animation: slideUp 0.3s ease-out;
 }
 .header-content h1 { margin: 0; font-size: 1.8rem; font-weight: 800; color: var(--text-primary); }
 .header-content p { margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem; }
 
-/* 1. GRID (Panel Izquierdo Más Ancho) */
+/* =========================================================
+   3. GRID Y PANELES INDEPENDIENTES (FIXED)
+   ========================================================= */
 .grid {
-  display: grid; grid-template-columns: 400px 1fr; gap: 25px; align-items: start;
-  animation: slideUp 0.4s ease-out;
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 25px;
+  
+  /* Esto asegura que ocupe el resto de la pantalla debajo del header */
+  flex: 1;
+  height: 100%; 
+  min-height: 0; /* TRUCO CLAVE para permitir scroll en hijos */
+  overflow: hidden; /* El grid no scrollea, scrollean sus hijos */
+  align-items: stretch;
 }
-.left-column { display: flex; flex-direction: column; gap: 20px; }
-.right-column { display: flex; flex-direction: column; flex-grow: 1; min-width: 0; }
+
+/* --- COLUMNA IZQUIERDA (CON SCROLL PROPIO) --- */
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  
+  height: 100%; /* Forza a ocupar el alto del grid */
+  overflow-y: auto; /* <--- ACTIVA EL SCROLL AQUÍ */
+  padding-right: 5px; /* Espacio para que la barra no tape contenido */
+}
+
+/* --- COLUMNA DERECHA (CONTENEDOR FIJO) --- */
+.right-column {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden; 
+}
+
+/* Bloque visual opcional menú */
+.sidebar-menu {
+  background-color: #171717;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #333;
+}
 
 /* TARJETAS KPI */
-.kpi-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+.kpi-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; flex-shrink: 0; }
 .kpi-card {
-  background: var(--bg-card); padding: 20px; border-radius: 10px; border: 1px solid var(--border-color);
-  border-top: 4px solid transparent; display: flex; flex-direction: column;
+  background: var(--bg-card);
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  border-top: 4px solid transparent;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 .kpi-card.green { border-top-color: var(--neon-green); }
@@ -72,350 +145,457 @@ body {
 .kpi-value.blue-text { color: var(--neon-blue); }
 
 /* 2. TARJETAS LATERALES CON COLOR */
-.card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.2s; }
-.form-card { border-left: 4px solid var(--neon-green); } /* Borde verde lateral */
-.scanner-card { border-left: 4px solid var(--neon-blue); } /* Borde azul lateral */
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: 0.2s;
+  text-align: center;
+}
+
+/* PANELES ESPECÍFICOS */
+.form-card { border-left: 4px solid var(--neon-green); }
+.scanner-card { padding: 15px !important;border-left: 4px solid var(--neon-blue); }
+.panel-production { border-left: 4px solid var(--neon-orange); background-color: #222; }
+.panel-standard { border-left: 4px solid var(--neon-green); }
 
 /* INPUTS Y LABELS */
-.input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+.scanner-card button {
+    padding: 8px 12px; /* Menos relleno que los botones normales */
+    font-size: 0.9rem; /* Letra un poco más chica */
+    width: 100%; /* O cambia a 'auto' si no quieres que llene todo el ancho */
+}
+.input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 5px; margin-top: 0;}
 .input-group label { font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; }
 input {
-  background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);
-  padding: 12px 15px; border-radius: 8px; width: 100%; outline: none; font-size: 0.95rem; transition: 0.2s;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 8px;
+  border-radius: 8px;
+  width: 100%;
+  outline: none;
+  font-size: 0.95rem;
+  transition: 0.2s;
 }
 input:focus { border-color: var(--neon-green); background-color: #2a2a2a; box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.15); }
 
-/* 3. SELECTOR DE MODO (Verde en StatsPage style) */
+/* ESTILOS DE TEXTO */
+.text-orange { color: var(--neon-orange); margin: 0; }
+.text-green { color: var(--neon-green); margin: 0; }
+.text-blue { color: var(--neon-blue); margin: 0; }
+
+/* =========================================================
+   FORMULARIOS COMPACTOS
+   ========================================================= */
+.compact-form { display: flex; flex-direction: column; gap: 12px; }
+
+.form-row { display: flex; gap: 10px; align-items: flex-start; }
+
+.mini-toggle-group {
+  flex: 1;
+  display: flex;
+  background: #333;
+  border-radius: 6px;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+}
+.mini-toggle-group button {
+  flex: 1;
+  background: transparent;
+  color: #aaa;
+  font-size: 0.75rem;
+  padding: 6px;
+  border-radius: 4px;
+  margin: 0;
+}
+.mini-toggle-group button.active {
+  background: var(--neon-orange);
+  color: #000;
+  font-weight: 800;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.weight-group { flex: 0.6; }
+.weight-group input { text-align: center; padding: 9px; }
+
+.price-col { flex: 1; display: flex; flex-direction: column; }
+.price-col input { padding: 10px; }
+.hint-orange {
+  font-size: 0.7rem;
+  color: var(--neon-orange);
+  text-align: right;
+  min-height: 16px;
+  margin-top: 2px;
+}
+
+.stock-input-small {
+  width: 80px !important;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.compact-btn { padding: 10px; font-size: 0.95rem; }
+.btn-orange {
+  background-color: var(--neon-orange);
+  color: #000;
+  box-shadow: 0 4px 10px rgba(255, 152, 0, 0.2);
+}
+.btn-orange:hover { background-color: #ffad33; transform: translateY(-2px); }
+
+/* 3. SELECTOR DE MODO */
 .stock-mode-selector {
-  display: flex; gap: 0; background: #252525; border-radius: 8px; margin-bottom: 15px;
-  border: 1px solid var(--border-color); overflow: hidden;
+  display: flex;
+  gap: 0;
+  background: #252525;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
 }
 .mode-btn {
-  flex: 1; padding: 10px; background: transparent; color: var(--text-secondary); border: none;
-  cursor: pointer; font-weight: 600; transition: 0.2s;
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
   border-right: 1px solid var(--border-color);
 }
 .mode-btn:last-child { border-right: none; }
-.mode-btn.active {
-  background: var(--neon-green); /* VERDE AHORA */
-  color: #000; /* Texto oscuro para contraste */
-}
+.mode-btn.active { background: var(--neon-green); color: #000; }
 
-/* 3. INPUTS DE CAJA/UNIDAD (Mismo tamaño) */
-.stock-input-container { height: 50px; display: flex; align-items: center; } /* Contenedor fijo */
+/* 3. INPUTS DE CAJA/UNIDAD */
+.stock-input-container { height: 50px; display: flex; align-items: center; width: 100%; }
 .stock-input-container input { height: 100%; font-size: 1rem; }
 
 .box-inputs-row { display: flex; gap: 10px; align-items: center; height: 100%; width: 100%; }
 .box-inputs-row input { text-align: center; }
 .box-x { color: var(--text-secondary); font-weight: bold; }
 
-/* 6. ESCÁNER (Sin emojis, estilo técnico) */
-.scanner-status { 
-  background: rgba(41, 121, 255, 0.1); color: var(--neon-blue); 
-  padding: 10px; border-radius: 6px; text-align: center; font-weight: 600; margin-bottom: 10px;
+/* 6. ESCÁNER */
+.scanner-status {
+  background: rgba(41, 121, 255, 0.1);
+  color: var(--neon-blue);
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 10px;
   border: 1px solid var(--neon-blue);
 }
 
-/* BOTONES */
+/* BOTONES GLOBALES */
 button { border: none; border-radius: 8px; padding: 12px; cursor: pointer; font-weight: 700; transition: 0.2s; }
 .btn-primary { background-color: var(--neon-green); color: #000; width: 100%; box-shadow: 0 4px 10px rgba(0, 230, 118, 0.2); }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 230, 118, 0.3); }
 .btn-secondary { background-color: #333; color: #fff; border: 1px solid var(--border-color); }
 .btn-secondary:hover { background-color: #444; border-color: #666; }
-.btn-danger { background-color: var(--neon-red); color: white; width: 100%; }
+.btn-danger { background-color: var(--neon-red); color: white; width: 100%; margin-top: 10px; }
 
-/* TABLA */
-.table-wrapper { flex-grow: 1; overflow-x: auto; border: 1px solid var(--border-color); border-radius: 10px; background-color: var(--bg-card); }
+/* =========================================================
+   TABLA / PANEL DERECHO (SCROLL PROPIO)
+   ========================================================= */
+.table-wrapper {
+  flex-grow: 1; /* Ocupa todo el espacio disponible */
+  
+  /* ESTO ACTIVA EL SCROLLBAR EN LA TABLA */
+  overflow: auto; 
+  height: 100%;
+  
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background-color: var(--bg-card);
+}
+
+/* Para que la cabecera no se mueva al bajar */
 table { width: 100%; border-collapse: collapse; white-space: nowrap; }
-th { text-align: left; padding: 16px 20px; background-color: #252525; color: var(--text-secondary); font-size: 0.75rem; border-bottom: 1px solid var(--border-color); text-transform: uppercase; letter-spacing: 1px; }
-td { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #eee; vertical-align: middle; }
+th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  text-align: left;
+  padding: 16px 20px;
+  background-color: #252525;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+td {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: #eee;
+  vertical-align: middle;
+}
+
 .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-block; min-width: 45px; text-align: center; }
 .badge.green { background: rgba(0, 230, 118, 0.15); color: var(--neon-green); border: 1px solid var(--neon-green); }
 .badge.yellow { background: rgba(255, 234, 0, 0.15); color: var(--neon-yellow); border: 1px solid var(--neon-yellow); }
 .badge.red { background: rgba(255, 23, 68, 0.15); color: var(--neon-red); border: 1px solid var(--neon-red); }
 
 /* CONTROLES TABLA */
-.table-controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
+.table-controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-shrink: 0; }
 .search-wrapper { flex-grow: 1; }
 .search-wrapper input { padding-left: 15px; background-color: var(--bg-main); height: 45px; }
-.filter-toggle { display: flex; align-items: center; gap: 10px; color: var(--text-secondary); cursor: pointer; background: var(--bg-card); padding: 0 20px; height: 45px; border-radius: 8px; border: 1px solid var(--border-color); font-weight: 600; }
+.filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  background: var(--bg-card);
+  padding: 0 20px;
+  height: 45px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-weight: 600;
+}
 .filter-toggle input { width: 18px; height: 18px; accent-color: var(--neon-green); margin: 0; }
 
-/* 5. MODAL POPUP MEJORADO */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 2000; animation: fadeIn 0.3s; }
-.modal-content { background: var(--bg-card); border: 1px solid var(--border-color); padding: 30px; border-radius: 16px; width: 95%; max-width: 450px; box-shadow: 0 25px 60px rgba(0,0,0,0.6); text-align: center; animation: slideUp 0.3s; }
+/* 5. MODAL POPUP */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s;
+}
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 30px;
+  border-radius: 16px;
+  width: 95%;
+  max-width: 450px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+  text-align: center;
+  animation: slideUp 0.3s;
+}
 .modal-content h2 { margin-top: 0; color: #fff; margin-bottom: 20px; }
 
-/* Contenedor con borde grueso */
-.modal-tabs-container {
-  border: 3px solid #444;       
-  border-radius: 40px; /* Redondeo mayor para que encaje la píldora */
-  margin-bottom: 10px;        
-  background: #111;    /* Fondo oscuro sólido */
-  box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); /* Profundidad */
-}
-
-.modal-tabs {
-  position: relative; /* Necesario para que el glider se mueva dentro */
-  display: grid;      /* Usamos Grid para dividir en 3 partes iguales exactas */
-  grid-template-columns: 1fr 1fr 1fr; 
-  z-index: 1;
-}
-
-/* --- EL DESLIZADOR (LA ANIMACIÓN) --- */
-.tab-glider {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;        /* Ocupará 1 celda del grid gracias al transform */
-  width: calc(100% / 3); /* Matemáticamente es un tercio del ancho */
-  border-radius: 30px;
-  z-index: 1;         /* Detrás del texto */
-  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); /* Animación suave tipo 'rebote' */
-}
-
-/* Posiciones y Colores del Deslizador */
-.tab-glider.suma {
-  transform: translateX(0%);
-  background: var(--neon-green);
-}
-
-.tab-glider.resta {
-  transform: translateX(100%); /* Se mueve al segundo lugar */
-  background: var(--neon-red);
-
-}
-
-.tab-glider.set {
-  transform: translateX(200%); /* Se mueve al tercer lugar */
-  background: var(--neon-blue);
-
-}
-
-/* --- LOS BOTONES DE TEXTO --- */
-.tab-option {
-  position: relative;
-  z-index: 2;         /* El texto debe estar ENCIMA del glider */
-  background: transparent;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  color: #666;        /* Color por defecto (inactivo) */
-  transition: color 0.3s;
-}
-
-/* Cambio de color del texto según cuál esté activo */
-.tab-option.active {
-  color: var(--text-primary); /* Texto blanco cuando está seleccionado */
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
+.modal-tabs-container { border: 3px solid #444; border-radius: 40px; margin-bottom: 10px; background: #111; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
+.modal-tabs { position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; z-index: 1; }
+.tab-glider { position: absolute; top: 0; left: 0; height: 100%; width: calc(100% / 3); border-radius: 30px; z-index: 1; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); }
+.tab-glider.suma { transform: translateX(0%); background: var(--neon-green); }
+.tab-glider.resta { transform: translateX(100%); background: var(--neon-red); }
+.tab-glider.set { transform: translateX(200%); background: var(--neon-blue); }
+.tab-option { position: relative; z-index: 2; background: transparent; border: none; font-weight: 600; cursor: pointer; color: #666; transition: color 0.3s; }
+.tab-option.active { color: var(--text-primary); text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
 .modal-footer { display: flex; gap: 15px; margin-top: 25px; }
 
-@media (max-width: 900px) {
-  /* La Grid pasa a 1 sola columna */
-  .grid {
-    grid-template-columns: 1fr;
-  }
+/* CABECERAS DESPLEGABLES */
+.card-header-interactive { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;  }
+.card-header-interactive:hover h3 { filter: brightness(1.2); }
+.card-header-static { display: flex; flex-direction: column; justify-content: center; }
+.card-subtitle { display: block; font-size: 0.8rem; color: var(--text-secondary); }
+.toggle-arrow { font-size: 0.9rem; color: var(--text-secondary); }
+.slide-down-animation { animation: fadeIn 0.3s ease-out; margin-top: -15px; }
 
-  /* ARREGLO HEADER: Apila el texto y el botón */
-  .header-container {
-    flex-direction: column;
-    align-items: stretch; /* El botón ocupa todo el ancho */
-    text-align: center;
-    padding: 20px;
-  }
-
-  .header-content h1 {
-    font-size: 1.5rem; /* Letra un poco más pequeña para que quepa */
-    margin-bottom: 5px;
-  }
-
-  /* Ajustes generales para móvil */
-  .app { padding: 15px; }
-  .table-controls { flex-direction: column; align-items: stretch; }
-  .box-inputs-container { gap: 10px; padding: 10px; }
-  
-  /* Ajuste de inputs en móvil */
-  .stock-input-container { height: auto; }
-  .box-inputs-row { flex-wrap: nowrap; }
-}
-
-/* ... (Todo el CSS anterior es válido, solo agrega esto para el desplegable) ... */
-
-/* Estilo para el Header Desplegable */
-.card-header-toggle {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    padding-bottom: 10px; /* Espacio si está abierto */
-    user-select: none;
-}
-
-.card-header-toggle:hover h3 {
-    filter: brightness(1.2);
-}
-
-.toggle-arrow {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-}
-
-/* Animación al abrir */
-.slide-down-animation {
-    animation: fadeIn 0.3s ease-out;
-}
-
-/* Dropdown del Menú Exportar (Ajuste visual) */
-.dropdown-menu {
-    position: absolute; top: 115%; right: 0; background-color: var(--bg-card);
-    border: 1px solid var(--border-color); border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6); z-index: 100; overflow: hidden; min-width: 160px;
-}
-.dropdown-menu button {
-    background: transparent; color: var(--text-primary); width: 100%; text-Align: left; padding: 12px 20px;
-    border-bottom: 1px solid #333;
-}
+/* Dropdown del Menú Exportar */
+.dropdown-menu { position: absolute; top: 115%; right: 0; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); z-index: 100; overflow: hidden; min-width: 160px; }
+.dropdown-menu button { background: transparent; color: var(--text-primary); width: 100%; text-align: left; padding: 12px 20px; border-bottom: 1px solid #333; }
 .dropdown-menu button:last-child { border-bottom: none; }
 .dropdown-menu button:hover { background: rgba(255,255,255,0.05); color: var(--neon-green); }
 
-.card-header-interactive {
+.pricing-config-box { 
+    background: #1a1a1a; 
+    padding: 15px;          /* Espacio interno para que no se vea apretado */
+    border-radius: 8px; 
+    border: 1px solid #333; 
+    
+    /* ESTO ES LO IMPORTANTE PARA LA DISPOSICIÓN: */
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column; 
+    gap: 15px;              /* Espacio entre la fila del Toggle/Peso y la fila de Precios */
+    margin-top: 5px;        /* Separa del input de Nombre */
+    margin-bottom: 15px;    /* Separa del input de Cantidad */
+}
+.config-row-top { 
+    display: flex; 
+    gap: 10px; 
+    align-items: stretch; /* Hace que el botón y el input tengan la misma altura */
+    margin-bottom: 0;     /* Quitamos márgenes extraños */
+}
+
+/* Asegura que el toggle ocupe espacio pero no todo */
+/* Modifica o verifica esto en tu CSS */
+.toggle-pricing {
+    display: flex;
+    background: #333;
+    border-radius: 6px;
+    padding: 4px;
+    height: 40px;
+    width: 100%; /* Asegura que llene la caja gris */
+}
+.toggle-pricing button {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #aaa;
+    
+    /* CAMBIOS CLAVE AQUÍ: */
+    font-size: 1rem;      /* Letra más grande (antes 0.8rem) */
+    font-weight: 600;     /* Texto más grueso */
+    padding: 0;           /* Quitamos padding interno porque usamos height en el padre */
+    
     cursor: pointer;
-    user-select: none;
-    padding-bottom: 5px;
-}
-.card-header-interactive:hover h3 {
-    filter: brightness(1.2);
-}
-
-.card-header-static {
+    border-radius: 4px;
+    transition: 0.2s;
+    
+    /* Centrar texto perfectamente */
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    margin-bottom: 5px;
 }
-
-.card-subtitle {
-    display: block;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    margin-top: 2px;
+.toggle-pricing button.active { background: var(--neon-orange); color: white; font-weight: 600; }
+.weight-input-wrapper { flex: 1; position: relative; display: flex; align-items: center; }
+.weight-input-wrapper input { width: 100%; padding: 6px 25px 6px 10px; border: 1px solid #444; background: #111; color: white; border-radius: 6px; font-size: 0.9rem; }
+.unit-label { position: absolute; right: 8px; color: #666; font-size: 0.8rem; pointer-events: none; }
+.config-row-prices { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
+    gap: 15px; /* Separación horizontal entre Costo y Venta */
 }
-
-.toggle-arrow {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
-
-/* Animación suave para el desplegable */
-.slide-down-animation {
-    animation: fadeIn 0.3s ease-out;
-    margin-top: 15px; /* Espacio cuando se despliega */
-}
+.price-input-group label { font-size: 0.75rem; color: #aaa; margin-bottom: 4px; display: block; }
+.price-input-group input { width: 100%; background: #111; border: 1px solid #444; padding: 8px; color: white; border-radius: 6px; }
+.conversion-hint { display: block; text-align: right; font-size: 0.7rem; color: #ff9800; margin-top: 2px; height: 14px; }
+.big-qty-input { font-size: 1.1rem; text-align: center; font-weight: bold; }
+.mt-10 { margin-top: 10px; }
+.w-100 { width: 100%; }
+.prices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 
 /* =========================================
-   CORRECCIÓN RESPONSIVE (MÓVIL)
+   RESPONSIVE (MÓVIL)
    ========================================= */
 @media (max-width: 900px) {
-  
-  /* 1. ARREGLO DEL LAYOUT PRINCIPAL */
-  .app {
-    padding: 10px; /* Reducir padding global */
-    overflow-x: hidden; /* Evitar scroll horizontal indeseado */
-  }
+  /* En móvil, volvemos al scroll normal del navegador */
+  html, body, #root { overflow: auto; height: auto; }
+  .app { height: auto; padding: 15px; overflow: visible; }
 
   .grid {
-    display: flex; /* Cambiamos Grid por Flex vertical */
+    display: flex;
     flex-direction: column;
     gap: 15px;
     width: 100%;
+    height: auto;
   }
 
-  .left-column, 
-  .right-column {
-    width: 100%; /* Forzar ancho completo */
-    min-width: 0; /* Truco de CSS para evitar desbordes en flex items */
+  .left-column, .right-column {
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+    padding-right: 0;
+    height: auto;
   }
 
-  /* 2. HEADER COMPACTO */
-  .header-container {
-    flex-direction: column;
-    text-align: center;
-    gap: 15px;
-    padding: 15px;
-  }
-  
-  .header-content h1 {
-    font-size: 1.4rem;
-  }
-  
-  .header-container button {
-    width: 100%; /* Botón "Nuevo Producto" ancho completo */
-  }
+  .sidebar-menu { border: none; padding: 0; background: transparent; }
 
-  /* 3. TARJETAS KPI (Mantener 2 columnas pero más pequeñas) */
-  .kpi-container {
-    gap: 10px;
-  }
-  .kpi-card {
-    padding: 15px;
-  }
-  .kpi-value {
-    font-size: 1.3rem;
-  }
+  .header-container { flex-direction: column; text-align: center; gap: 15px; padding: 15px; }
+  .header-content h1 { font-size: 1.4rem; }
+  .header-container button { width: 100%; }
 
-  /* 4. TABLA RESPONSIVA */
+  .kpi-container { gap: 10px; }
+  .kpi-card { padding: 15px; }
+  .kpi-value { font-size: 1.3rem; }
+
   .table-wrapper {
-    /* Esto es vital para que la tabla no empuje el ancho de la pantalla */
     width: 100%;
-    max-width: calc(100vw - 25px); /* Restamos el padding de la app */
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
-  }
-  
-  th, td {
-    padding: 12px 10px; /* Celdas más compactas */
-    font-size: 0.8rem;
+    max-width: calc(100vw - 25px);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: auto;
   }
 
-  /* 5. CONTROLES DE TABLA (Búsqueda y Filtros) */
-  .table-controls {
-    flex-direction: column;
+  th, td { padding: 12px 10px; font-size: 0.8rem; }
+
+  .table-controls { 
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dos columnas iguales (50% - 50%) */
     gap: 10px;
+    width: 100%;
   }
-  
-  .search-wrapper, 
-  .filter-toggle {
-    width: 100%; /* Inputs anchos */
+  .search-wrapper { 
+    grid-column: 1 / -1; /* Expande de la columna 1 a la última */
+    width: 100%; 
     box-sizing: border-box;
   }
-
-  /* 6. MODAL (Ajuste para móviles) */
-  .modal-content {
-    width: 90%;
-    padding: 20px;
-    max-height: 90vh; /* Evitar que se salga por arriba/abajo */
-    overflow-y: auto;
+  .table-controls > div:last-child {
+    width: 100%;
+  }
+  .table-controls > div:last-child button {
+    width: 100%;
   }
 
-  .modal-tabs-container {
-    border-radius: 25px; /* Ajuste visual */
-  }
-  
-  .tab-option {
-    font-size: 0.85rem; /* Texto más pequeño en selector */
-    padding: 8px 0;
-  }
-  
-  /* 7. INPUTS DE STOCK (Cajas y Unidades) */
-  .box-inputs-row {
-    gap: 5px;
-  }
-  .box-x {
-    margin: 0 2px;
-  }
+  .modal-content { width: 90%; padding: 20px; max-height: 90vh; overflow-y: auto; }
+  .modal-tabs-container { border-radius: 25px; }
+  .tab-option { font-size: 0.85rem; padding: 8px 0; }
+
+  .box-inputs-row { gap: 5px; }
+  .box-x { margin: 0 2px; }
+
+  .form-row { flex-wrap: wrap; }
+
+
+}
+
+/* =========================================================
+   NUEVOS ESTILOS PARA ELABORACIÓN PROPIA COMPACTA
+   ========================================================= */
+
+/* 1. Grupo de Botones Toggle (Unidad/Kilo) */
+.production-toggle-group {
+    display: flex;
+    background: #333;
+    border-radius: 8px; /* Coincide con los inputs */
+    padding: 4px;
+    height: 42px; /* Altura cómoda */
+    width: 100%;
+}
+
+.production-toggle-group button {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #aaa;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.production-toggle-group button.active {
+    background: var(--neon-orange);
+    color: #121212; /* Texto oscuro para contraste */
+    font-weight: 800;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* 2. Fila Compacta de Precios (Costo y Venta lado a lado) */
+.prices-compact-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
+    gap: 15px; /* Espacio central */
+}
+
+/* Asegura que el label de 'gr' no se monte sobre el número */
+.weight-input-wrapper input {
+    padding-right: 35px !important; 
 }

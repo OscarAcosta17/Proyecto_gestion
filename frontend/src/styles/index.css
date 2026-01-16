@@ -1,26 +1,52 @@
+/* src/index.css */
+
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  color-scheme: dark;
+  background-color: #121212;
+  color: rgba(255, 255, 255, 0.87);
+}
+
+/* 1. RESET LIMPIO (SIN !important) */
 html, body {
-    overflow-y: auto !important; /* Permite scroll vertical */
-    overflow-x: hidden !important; /* Evita scroll lateral */
-    height: auto !important; /* Deja que la página crezca */
-    position: static !important;
-    touch-action: auto !important; /* Habilita gestos táctiles */
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%; /* Ocupa el 100% de la ventana, pero permite que los hijos decidan el scroll */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 2. Desbloquear los contenedores principales */
-/* (Añade aquí las clases de tus contenedores principales) */
-#root, 
-.app, 
-.master-container, 
-.dashboard-content {
-    height: auto !important; /* Que crezcan según el contenido */
-    min-height: 100vh; /* Al menos el alto de la pantalla */
-    overflow: visible !important; /* No ocultar lo que sobra */
-    position: relative !important;
+/* 2. ROOT NEUTRO */
+#root {
+  width: 100%;
+  height: 100%;
+  /* No ponemos overflow aquí. Dejamos que cada Página (App, InventoryPage, etc) decida si quiere scroll o no */
 }
 
-/* 3. Arreglo específico para móviles */
-@media (max-width: 900px) {
-    .master-container, .app {
-        padding-bottom: 100px !important; /* Espacio extra abajo para no chocar con bordes del móvil */
-    }
+/* 3. SCROLLBARS GLOBALES (Estética oscura para toda la app) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #121212; 
+}
+
+::-webkit-scrollbar-thumb {
+  background: #444; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #666; 
+}
+
+/* 4. CONFIGURACIÓN BÁSICA DE CAJA */
+*, *::before, *::after {
+  box-sizing: border-box;
 }

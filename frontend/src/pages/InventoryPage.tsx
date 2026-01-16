@@ -1,11 +1,9 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-// 1. RESTAURAMOS TUS IMPORTS ORIGINALES (No los borramos)
 import { getProducts, createProduct, updateStock, updateProduct } from "../services/api";
 import BarcodeScanner from "../components/BarcodeScanner";
 import { exportToExcel, exportToPDF } from "../components/exportUtils"; 
 import "../styles/InventoryPage.css"; 
-// 2. IMPORTAMOS EL HOOK DE SEGURIDAD
 import { useAuth } from "../context/AuthContext";
 
 interface Product {
@@ -20,56 +18,58 @@ interface Product {
 const InventoryPage = () => {
   document.title = "Inventario | NexusERP";
   const navigate = useNavigate();
-
-  // 3. OBTENEMOS LA FUNCIÓN DE VERIFICACIÓN
   const { apiCall } = useAuth();
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   
+  // --- ESTADOS GENERALES ---
   const [products, setProducts] = useState<Product[]>([]);
   const [scannerActive, setScannerActive] = useState(false);
   
-  // UI States
-  const [showForm, setShowForm] = useState(false); 
+  // Control de visualización de paneles
+  const [showProductionForm, setShowProductionForm] = useState(false); 
+  const [showStandardForm, setShowStandardForm] = useState(false);
+  
   const [showStockModal, setShowStockModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [feedback, setFeedback] = useState<{msg: string, type: 'in' | 'out'} | null>(null);
-  
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  
-  // Filtros y Ordenamiento
   const [searchTerm, setSearchTerm] = useState("");
   const [showZeroStock, setShowZeroStock] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
-
-  // Lógica Modal (Stock)
+  
+  // Estados del Modal de Ajuste
   const [stockMode, setStockMode] = useState<'unit' | 'box'>('unit');
   const [updateType, setUpdateType] = useState<'suma' | 'resta' | 'set'>('suma');
   const [boxDetails, setBoxDetails] = useState({ boxes: 1, unitsPerBox: 1 });
   const [quantityInput, setQuantityInput] = useState(0);
-
-  // Estado para precios en el modal
   const [modalPrices, setModalPrices] = useState({ cost: 0, sale: 0 });
 
+  // --- FORMULARIO ESTÁNDAR ---
   const [formData, setFormData] = useState({
     barcode: "", name: "", stock: 0, cost_price: 0, sale_price: 0
+  });
+
+  // --- FORMULARIO DE PRODUCCIÓN (Elaboración Propia) ---
+  const [prodForm, setProdForm] = useState({
+    name: "", 
+    cost_price: 0, 
+    sale_price: 0, 
+    stock: 0,
+    weight_grams: 0, 
+    pricing_mode: 'unit' as 'unit' | 'kilo'
   });
 
   useEffect(() => { loadProducts(); }, []);
 
   const loadProducts = async () => {
     try {
-      // 4. VERIFICACIÓN DE SESIÓN ANTES DE CARGAR
-      // Hacemos una llamada ligera. Si falla (401), apiCall activa el popup.
       const check = await apiCall(`${API_URL}/products?limit=1`); 
-      if (check.status === 401) return; // Si expiró, no intentamos cargar y esperamos el re-login
-
-      // Si todo está bien, usamos TU función original
+      if (check.status === 401) return;
       const data = await getProducts();
       setProducts(data);
     } catch (error) { console.error(error); }
   };
 
-  // --- LÓGICA DE ORDENAMIENTO (INTACTA) ---
   const visibleProducts = useMemo(() => {
     let filtered = products;
     if (!showZeroStock) filtered = filtered.filter(p => p.stock > 0);
@@ -106,19 +106,29 @@ const InventoryPage = () => {
     return sortConfig.direction === 'asc' ? ' ▲' : ' ▼';
   };
 
-  // --- ABRIR MODAL Y CARGAR DATOS ---
+  // --- LÓGICA DE CÁLCULO DE CONVERSIÓN ---
+  const getConversionPreview = (price: number) => {
+      if (!prodForm.weight_grams || prodForm.weight_grams <= 0) return null;
+      if (price <= 0) return null;
+
+      if (prodForm.pricing_mode === 'unit') {
+          // Tengo precio UNIDAD, calculo precio KILO
+          const perKilo = (price / prodForm.weight_grams) * 1000;
+          return `$${Math.round(perKilo).toLocaleString()}/kg`;
+      } else {
+          // Tengo precio KILO, calculo precio UNIDAD
+          const perUnit = (price / 1000) * prodForm.weight_grams;
+          return `$${Math.round(perUnit).toLocaleString()}/u`;
+      }
+  };
+
   const openAdjustModal = (product: Product) => {
       setSelectedProduct(product);
       setUpdateType('suma');
       setStockMode('unit');
       setQuantityInput(0);
       setBoxDetails({ boxes: 1, unitsPerBox: 1 });
-      
-      setModalPrices({ 
-          cost: product.cost_price, 
-          sale: product.sale_price 
-      });
-      
+      setModalPrices({ cost: product.cost_price, sale: product.sale_price });
       setShowStockModal(true);
   };
 
@@ -128,79 +138,69 @@ const InventoryPage = () => {
     if (existing) { 
         openAdjustModal(existing); 
     } else { 
-        if(window.confirm("Código nuevo. ¿Crear?")) { 
-            setFormData(p => ({...p, barcode: code})); 
-            setShowForm(true); 
-        } 
+        setFormData(p => ({...p, barcode: code})); 
+        setShowStandardForm(true);
+        showFeedback("Producto no existe. Créalo abajo.", 'in');
     }
   };
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  const handleStandardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.barcode.trim() || !formData.name.trim()) return showFeedback("Faltan datos", 'out');
     
-    if (!formData.barcode.trim() || !formData.name.trim()) { 
-        showFeedback("❌ El código y nombre son obligatorios.", 'out'); 
-        return; 
-    }
-    if (formData.cost_price <= 0 || formData.sale_price <= 0) { 
-        showFeedback("❌ Los precios deben ser mayores a 0.", 'out'); 
-        return; 
-    }
-
-    let finalStock = formData.stock;
-    if (stockMode === 'box') finalStock = boxDetails.boxes * boxDetails.unitsPerBox;
-    
-    try { 
-        // 5. VERIFICACIÓN DE SESIÓN ANTES DE CREAR
-        const check = await apiCall(`${API_URL}/products?limit=1`);
-        if (check.status === 401) return; // Detener si expiró
-
-        // USAMOS TU FUNCIÓN ORIGINAL
-        await createProduct({ ...formData, stock: finalStock }); 
-        
-        showFeedback("✅ Producto creado", 'in'); 
-        setFormData({barcode:"",name:"",stock:0,cost_price:0,sale_price:0}); 
-        loadProducts(); 
-    } catch (error: any) { showFeedback(error.message, 'out'); }
+    try {
+        await createProduct(formData);
+        showFeedback("✅ Producto Creado", 'in');
+        setFormData({barcode:"", name:"", stock:0, cost_price:0, sale_price:0});
+        loadProducts();
+    } catch (err:any) { showFeedback(err.message, 'out'); }
   };
 
-  // --- LOGICA DUAL: STOCK + PRECIOS ---
+  // --- NUEVA LÓGICA DE ID CORTO ---
+  const handleProductionSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      const userId = localStorage.getItem('userId') || '0';
+      // Generamos un string aleatorio corto de 4 caracteres
+      const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+      
+      // ID FINAL: INT-{USER}-{RANDOM} -> Ej: INT-15-X7Z9
+      const autoCode = `INT-${userId}-${randomSuffix}`;
+      
+      if (!prodForm.name.trim()) return showFeedback("Nombre obligatorio", 'out');
+      
+      try {
+          await createProduct({
+              barcode: autoCode,
+              name: prodForm.name,
+              stock: prodForm.stock,
+              cost_price: prodForm.cost_price,
+              sale_price: prodForm.sale_price
+          });
+
+          showFeedback("👨‍🍳 Producción Registrada", 'in');
+          setProdForm({ name: "", cost_price: 0, sale_price: 0, stock: 0, weight_grams: 0, pricing_mode: 'unit' });
+          loadProducts();
+
+      } catch (err: any) { showFeedback(err.message, 'out'); }
+  };
+
   const handleUpdateSubmit = async () => {
     if (!selectedProduct) return;
     const qty = calculateTotalQuantity();
     const userId = Number(localStorage.getItem('userId')) || 0;
-    
     try { 
-        // 6. VERIFICACIÓN DE SESIÓN ANTES DE ACTUALIZAR
-        const check = await apiCall(`${API_URL}/products?limit=1`);
-        if (check.status === 401) return; // Detener si expiró
-
-        // USAMOS TUS FUNCIONES ORIGINALES
-        if (qty > 0) {
-            await updateStock({ 
-                barcode: selectedProduct.barcode, 
-                user_id: userId, 
-                movement_type: updateType, 
-                quantity: qty 
-            });
-        }
-
+        if (qty > 0) await updateStock({ barcode: selectedProduct.barcode, user_id: userId, movement_type: updateType, quantity: qty });
         if (modalPrices.cost !== selectedProduct.cost_price || modalPrices.sale !== selectedProduct.sale_price) {
-             await updateProduct(selectedProduct.id, {
-                 cost_price: modalPrices.cost,
-                 sale_price: modalPrices.sale
-             });
+             await updateProduct(selectedProduct.id, { cost_price: modalPrices.cost, sale_price: modalPrices.sale });
         }
-
-        showFeedback("✅ Producto actualizado", 'in'); 
+        showFeedback("✅ Actualizado", 'in'); 
         setShowStockModal(false); 
         loadProducts(); 
-
-    } catch (error: any) { 
-        showFeedback(error.message, 'out'); 
-    }
+    } catch (error: any) { showFeedback(error.message, 'out'); }
   };
 
+  // Renderizadores de inputs
   const renderQuantityInputs = (isModal = false) => {
       const wrapperClass = "stock-input-container";
       if (stockMode === 'unit') {
@@ -249,28 +249,126 @@ const InventoryPage = () => {
             <div className="kpi-card blue"><span className="kpi-label">Items</span><span className="kpi-value blue-text">{totalItems.toLocaleString()}</span></div>
           </div>
 
-          <div className="card form-card">
-            <div className="card-header-interactive" onClick={() => setShowForm(!showForm)}>
+          {/* ========================================================= */}
+          {/* TARJETA 1: ELABORACIÓN PROPIA (DISEÑO COMPACTO) */}
+          {/* ========================================================= */}
+          <div className="card panel-production">
+             <div className="card-header-interactive" onClick={() => setShowProductionForm(!showProductionForm)}>
+                 <div>
+                     <h3 className="text-orange">👨‍🍳 Elaboración Propia</h3>
+                     <small className="card-subtitle">Producción interna y a granel</small>
+                 </div>
+                 <span className="toggle-arrow text-orange">{showProductionForm ? '▲' : '▼'}</span>
+             </div>
+             
+             {showProductionForm && (
+                 <form onSubmit={handleProductionSubmit} className="slide-down-animation panel-content">
+                     
+                     {/* 1. NOMBRE */}
+                     <div className="input-group">
+                         <label>Nombre del Producto</label>
+                         <input 
+                            value={prodForm.name} 
+                            onChange={e => setProdForm({...prodForm, name: e.target.value})}
+                            placeholder="Ej: Pan Amasado, Torta..." 
+                            required
+                         />
+                     </div>
+
+                     {/* 2. PESO (Gramos) */}
+                     <div className="input-group">
+                        <label>Peso ({prodForm.pricing_mode === 'unit' ? 'por unidad' : 'referencia'})</label>
+                        <div className="weight-input-wrapper">
+                            <input 
+                                type="number" 
+                                placeholder="0" 
+                                value={prodForm.weight_grams || ''} 
+                                onChange={e => setProdForm({...prodForm, weight_grams: Number(e.target.value)})}
+                            />
+                            <span className="unit-label">gr</span>
+                        </div>
+                     </div>
+
+                     {/* 3. MODO DE PRECIO (Botones grandes tipo toggle) */}
+                     <div className="input-group">
+                        <label>Modo de Precio</label>
+                        <div className="production-toggle-group">
+                            <button type="button" className={prodForm.pricing_mode === 'unit' ? 'active' : ''} onClick={() => setProdForm({...prodForm, pricing_mode: 'unit'})}>Unidad</button>
+                            <button type="button" className={prodForm.pricing_mode === 'kilo' ? 'active' : ''} onClick={() => setProdForm({...prodForm, pricing_mode: 'kilo'})}>Kilo</button>
+                        </div>
+                     </div>
+
+                     {/* 4. COSTO Y VENTA (En una fila) */}
+                     <div className="prices-compact-row">
+                         <div className="input-group">
+                             <label>Costo ({prodForm.pricing_mode === 'unit' ? 'u' : 'kg'})</label>
+                             <input 
+                                type="number" 
+                                placeholder="0" 
+                                value={prodForm.cost_price || ''} 
+                                onChange={e => setProdForm({...prodForm, cost_price: Number(e.target.value)})} 
+                             />
+                             <span className="conversion-hint">
+                                {getConversionPreview(prodForm.cost_price)}
+                             </span>
+                         </div>
+                         
+                         <div className="input-group">
+                             <label>Venta ({prodForm.pricing_mode === 'unit' ? 'u' : 'kg'})</label>
+                             <input 
+                                type="number" 
+                                placeholder="0" 
+                                value={prodForm.sale_price || ''} 
+                                onChange={e => setProdForm({...prodForm, sale_price: Number(e.target.value)})} 
+                             />
+                             <span className="conversion-hint">
+                                {getConversionPreview(prodForm.sale_price)}
+                             </span>
+                         </div>
+                     </div>
+
+                     {/* 5. CANTIDAD */}
+                     <div className="input-group">
+                          <label>Cantidad Producida</label>
+                          <input 
+                              type="number" 
+                              placeholder="0" 
+                              value={prodForm.stock || ''} 
+                              onChange={e => setProdForm({...prodForm, stock: Number(e.target.value)})} 
+                          />
+                      </div>
+
+                     {/* BOTÓN GUARDAR */}
+                     <button type="submit" className="btn-orange" style={{width: '100%', marginTop: '5px'}}>
+                        Guardar Producción
+                     </button>
+                 </form>
+             )}
+          </div>
+
+          {/* ========================================================= */}
+          {/* TARJETA 2: PRODUCTO ESTÁNDAR */}
+          {/* ========================================================= */}
+          <div className="card panel-standard form-card">
+            <div className="card-header-interactive" onClick={() => setShowStandardForm(!showStandardForm)}>
                 <div>
-                    <h3 style={{margin:0, color:'var(--neon-green)'}}>+ Nuevo Producto</h3>
-                    <small className="card-subtitle">Creación manual de ítem</small>
+                    <h3 className="text-green">📦 Producto Nuevo</h3>
+                    <small className="card-subtitle">Revendibles con código de barra</small>
                 </div>
-                <span className="toggle-arrow">{showForm ? '▲' : '▼'}</span>
+                <span className="toggle-arrow">{showStandardForm ? '▲' : '▼'}</span>
             </div>
-            {showForm && (
-                <form onSubmit={handleCreateSubmit} className="slide-down-animation">
-                    <div className="input-group"><label>Código de Barras</label><input value={formData.barcode} onChange={e => setFormData({...formData, barcode: e.target.value})} placeholder="Escanea o escribe..." required /></div>
-                    <div className="input-group"><label>Nombre del Producto</label><input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Ej: Coca Cola 3L" required /></div>
+            
+            {showStandardForm && (
+                <form onSubmit={handleStandardSubmit} className="slide-down-animation panel-content">
+                    <div className="input-group">
+                        <label>Código de Barras</label>
+                        <input value={formData.barcode} onChange={e => setFormData({...formData, barcode: e.target.value})} placeholder="Escanea aquí..." required />
+                    </div>
+                    <div className="input-group"><label>Nombre</label><input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Ej: Coca Cola" required /></div>
                     
-                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px', marginBottom:'15px'}}>
-                        <div className="input-group">
-                            <label>Costo $</label>
-                            <input type="number" value={formData.cost_price || ''} onChange={e => setFormData({...formData, cost_price: Number(e.target.value)})} placeholder="Ej: 500" />
-                        </div>
-                        <div className="input-group">
-                            <label>Venta $</label>
-                            <input type="number" value={formData.sale_price || ''} onChange={e => setFormData({...formData, sale_price: Number(e.target.value)})} placeholder="Ej: 1000" />
-                        </div>
+                    <div className="prices-grid">
+                        <div className="input-group"><label>Costo $</label><input type="number" value={formData.cost_price || ''} onChange={e => setFormData({...formData, cost_price: Number(e.target.value)})} placeholder="0" /></div>
+                        <div className="input-group"><label>Venta $</label><input type="number" value={formData.sale_price || ''} onChange={e => setFormData({...formData, sale_price: Number(e.target.value)})} placeholder="0" /></div>
                     </div>
                     
                     <div className="input-group">
@@ -279,28 +377,29 @@ const InventoryPage = () => {
                         {renderQuantityInputs(false)}
                     </div>
                     
-                    <button type="submit" className="btn-primary" style={{marginTop:'10px'}}>Guardar Producto</button>
+                    <button type="submit" className="btn-primary">Guardar Producto</button>
                 </form>
             )}
           </div>
 
           <div className="card scanner-card">
              <div className="card-header-static">
-                 <h3 style={{margin:0, color:'var(--neon-blue)'}}>Escáner Rápido</h3>
+                 <h3 className="text-blue">Escáner Rápido</h3>
                  <small className="card-subtitle">Búsqueda por cámara</small>
              </div>
-             <div style={{marginTop:'15px'}}>
+             <div className="panel-content">
                  {scannerActive ? (
                      <>
                         <div className="scanner-status">SISTEMA ACTIVO...</div>
                         <BarcodeScanner active={scannerActive} onScan={handleScan} />
-                        <button onClick={() => setScannerActive(false)} className="btn-danger" style={{marginTop:'10px'}}>Detener</button>
+                        <button onClick={() => setScannerActive(false)} className="btn-danger mt-10">Detener</button>
                      </>
-                 ) : <button onClick={() => setScannerActive(true)} className="btn-secondary" style={{width:'100%'}}>Activar Cámara</button>}
+                 ) : <button onClick={() => setScannerActive(true)} className="btn-secondary w-100">Activar Cámara</button>}
              </div>
           </div>
         </div>
 
+        {/* COLUMNA DERECHA (TABLA) - SIN CAMBIOS */}
         <div className="right-column">
           <div className="table-controls">
             <div className="search-wrapper"><input placeholder="🔍 Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
@@ -348,49 +447,29 @@ const InventoryPage = () => {
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2>{selectedProduct.name}</h2>
             
-            {/* Header del Modal */}
             <div style={{display:'flex', justifyContent:'space-between', background:'#252525', padding:'15px', borderRadius:'8px', marginBottom:'20px', border:'1px solid #333'}}>
                 <span style={{color:'#aaa', marginTop: '6px'}}>Stock Actual</span><strong style={{fontSize:'1.5rem', marginRight: '20px'}}>{selectedProduct.stock}</strong>
             </div>
 
-            {/* --- SECCIÓN DE EDICIÓN DE PRECIOS --- */}
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px', background: '#1e1e1e', padding: '15px', borderRadius: '10px', border: '1px solid #333'}}>
                 <div style={{display:'flex', flexDirection:'column'}}>
                     <label style={{fontSize:'0.8rem', color:'#aaa', marginBottom:'5px'}}>Costo ($)</label>
-                    <input 
-                        type="number" 
-                        style={{background:'#111', border:'1px solid #444', padding:'8px', color:'white', borderRadius:'10px'}}
-                        value={modalPrices.cost} 
-                        onChange={e => setModalPrices({...modalPrices, cost: Number(e.target.value)})}
-                    />
+                    <input type="number" style={{background:'#111', border:'1px solid #444', padding:'8px', color:'white', borderRadius:'10px'}} value={modalPrices.cost} onChange={e => setModalPrices({...modalPrices, cost: Number(e.target.value)})} />
                 </div>
                 <div style={{display:'flex', flexDirection:'column'}}>
                     <label style={{fontSize:'0.8rem', color:'#aaa', marginBottom:'5px'}}>Venta ($)</label>
-                    <input 
-                        type="number" 
-                        style={{background:'#111', border:'1px solid #444', padding:'8px', color:'white', borderRadius:'10px'}}
-                        value={modalPrices.sale} 
-                        onChange={e => setModalPrices({...modalPrices, sale: Number(e.target.value)})}
-                    />
+                    <input type="number" style={{background:'#111', border:'1px solid #444', padding:'8px', color:'white', borderRadius:'10px'}} value={modalPrices.sale} onChange={e => setModalPrices({...modalPrices, sale: Number(e.target.value)})} />
                 </div>
             </div>
 
-            {/* Sección de Stock */}
             <div className="modal-tabs-container">
               <div className="modal-tabs">
                 <div className={`tab-glider ${updateType}`}></div>
-                <button 
-                    className={`tab-option ${updateType === 'suma' ? 'active' : ''}`} onClick={() => setUpdateType('suma')}> + Entrada
-                </button>
-                <button 
-                    className={`tab-option ${updateType === 'resta' ? 'active' : ''}`} onClick={() => setUpdateType('resta')}> - Salida
-                </button>
-                <button 
-                    className={`tab-option ${updateType === 'set' ? 'active' : ''}`} onClick={() => setUpdateType('set')}> = Establecer
-                </button>
+                <button className={`tab-option ${updateType === 'suma' ? 'active' : ''}`} onClick={() => setUpdateType('suma')}> + Entrada</button>
+                <button className={`tab-option ${updateType === 'resta' ? 'active' : ''}`} onClick={() => setUpdateType('resta')}> - Salida</button>
+                <button className={`tab-option ${updateType === 'set' ? 'active' : ''}`} onClick={() => setUpdateType('set')}> = Establecer</button>
               </div>
             </div>
-            
             
             {renderModeSelector()}
             <div style={{margin:'20px 0'}}>{renderQuantityInputs(true)}</div>

@@ -5,7 +5,6 @@ import '../styles/LoginPage.css';
 import AboutModal from '../components/AboutModal';
 
 
-// --- ANIMACIÓN AL SCROLLEAR ---
 interface RevealProps {
   children: ReactNode;
   className?: string;
