@@ -281,11 +281,11 @@ const LoginPage = () => {
                 <div className="pricing-titanium">
                     <div className="glow-effect"></div>
                     <div className="pricing-content">
-                        <div className="plan-header"><h3>Licencia Enterprise</h3><div className="price">1.5 UF<span>/mes + IVA</span></div><p>La solución definitiva para escalar tu operación.</p></div>
+                        <div className="plan-header"><h3>Licencia EnterSprise</h3><div className="price">X.X UF<span>/mes + IVA</span></div><p>La solución definitiva para escalar tu operación.</p></div>
                         <div className="plan-divider"></div>
                         <div className="features-grid">
-                            <ul className="check-list"><li>Usuarios Ilimitados</li><li>Productos Ilimitados</li><li>Multisucursal</li><li>Soporte Prioritario WhatsApp</li></ul>
-                            <ul className="check-list"><li>Backup Diario Automático</li><li>Dashboard de Business Intelligence</li><li>App Móvil de Consulta</li><li>Capacitación Inicial Incluida</li></ul>
+                            <ul className="check-list"><li>Usuarios Ilimitados</li><li>Productos Ilimitados</li></ul>
+                            <ul className="check-list"><li>Backup Diario Automático</li><li>Dashboard de Business Intelligence</li></ul>
                         </div>
                         <button className="btn-titanium" onClick={() => goToAuth(false)}>Comenzar Ahora</button>
                     </div>
