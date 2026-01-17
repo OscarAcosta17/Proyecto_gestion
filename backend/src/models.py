@@ -22,7 +22,7 @@ class User(Base):
     sales = relationship("Sale", back_populates="user")
     tickets = relationship("SupportTicket", back_populates="user")
 
-# --- TABLA DE PRODUCTOS (Tu nueva tabla) ---
+# --- TABLA DE PRODUCTOS ---
 class Product(Base):
     __tablename__ = "products"
 
@@ -31,6 +31,7 @@ class Product(Base):
     name = Column(String)
     stock = Column(Integer, default=0)
     cost_price = Column(Float, default=0.0)
+    gain = Column(Float, default=0.0) 
     sale_price = Column(Float, default=0.0)
     user_id = Column(Integer, ForeignKey("users.id")) #fk
     owner = relationship("User", back_populates="products")
@@ -48,7 +49,7 @@ class SupportTicket(Base):
 
     user = relationship("User", back_populates="tickets")
 
-# --- 4. HISTORIAL DE MOVIMIENTOS (La que faltaba) ---
+# --- 4. HISTORIAL DE MOVIMIENTOS ---
 class MovementHistory(Base):
     __tablename__ = "movement_history"
 
@@ -66,13 +67,9 @@ class Sale(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     date = Column(DateTime, default=datetime.now)
-    total_amount = Column(Integer) # Total de la venta en dinero
-    
-    # Relación con el usuario que hizo la venta (Vendedor)
+    total_amount = Column(Integer)
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="sales")
-
-    # Una venta tiene muchos items
     items = relationship("SaleItem", back_populates="sale")
     payment_method = Column(String, nullable=False, default="efectivo")
 

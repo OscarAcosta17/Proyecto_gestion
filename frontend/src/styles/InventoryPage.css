@@ -20,45 +20,27 @@
 
 * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
-/* =========================================================
-   1. BLOQUEO DE SCROLL GLOBAL (SOLICITADO)
-   Esto "apaga" el scrollbar del index.css y fija la app a la pantalla
-   ========================================================= */
+/* 1. SCROLL GLOBAL */
 html, body, #root {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden; /* <--- AQUÍ BLOQUEAMOS EL SCROLL GLOBAL */
+  height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; 
 }
 
 body {
-  background-color: var(--bg-main);
-  color: var(--text-primary);
+  background-color: var(--bg-main); color: var(--text-primary);
   background-image: radial-gradient(circle at 10% 20%, rgba(0, 230, 118, 0.02) 0%, transparent 20%),
                     radial-gradient(circle at 90% 80%, rgba(41, 121, 255, 0.02) 0%, transparent 20%);
   background-attachment: fixed;
 }
 
-/* El contenedor principal ocupa el 100% del alto disponible */
 .app {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding: 20px 30px;
-  gap: 25px;
-  overflow: hidden; /* Asegura que nada se salga del viewport */
+  height: 100vh; display: flex; flex-direction: column;
+  padding: 20px 30px; gap: 25px; overflow: hidden; 
 }
 
-/* =========================================================
-   2. SCROLLBARS PERSONALIZADOS
-   ========================================================= */
-/* Esto estiliza TODAS las barras de scroll que aparezcan dentro de la app */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-main); }
 ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #666; }
-
 
 /* ANIMACIONES */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -66,536 +48,251 @@ body {
 
 /* HEADER */
 .header-container {
-  flex-shrink: 0; /* Evita que el header se aplaste */
-  background-color: var(--bg-card);
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  padding: 15px 25px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-  animation: slideUp 0.3s ease-out;
+  flex-shrink: 0; background-color: var(--bg-card);
+  border-radius: 12px; border: 1px solid var(--border-color);
+  padding: 15px 25px; display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3); animation: slideUp 0.3s ease-out;
 }
 .header-content h1 { margin: 0; font-size: 1.8rem; font-weight: 800; color: var(--text-primary); }
 .header-content p { margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem; }
 
-/* =========================================================
-   3. GRID Y PANELES INDEPENDIENTES (FIXED)
-   ========================================================= */
+/* GRID */
 .grid {
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: 25px;
-  
-  /* Esto asegura que ocupe el resto de la pantalla debajo del header */
-  flex: 1;
-  height: 100%; 
-  min-height: 0; /* TRUCO CLAVE para permitir scroll en hijos */
-  overflow: hidden; /* El grid no scrollea, scrollean sus hijos */
-  align-items: stretch;
+  display: grid; grid-template-columns: 300px 1fr; gap: 25px;
+  flex: 1; height: 100%; min-height: 0; overflow: hidden; align-items: stretch;
 }
 
-/* --- COLUMNA IZQUIERDA (CON SCROLL PROPIO) --- */
-.left-column {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  
-  height: 100%; /* Forza a ocupar el alto del grid */
-  overflow-y: auto; /* <--- ACTIVA EL SCROLL AQUÍ */
-  padding-right: 5px; /* Espacio para que la barra no tape contenido */
-}
+.left-column { display: flex; flex-direction: column; gap: 20px; height: 100%; overflow-y: auto; padding-right: 5px; }
+.right-column { display: flex; flex-direction: column; flex-grow: 1; min-width: 0; height: 100%; overflow: hidden; }
 
-/* --- COLUMNA DERECHA (CONTENEDOR FIJO) --- */
-.right-column {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  min-width: 0;
-  height: 100%;
-  overflow: hidden; 
-}
-
-/* Bloque visual opcional menú */
-.sidebar-menu {
-  background-color: #171717;
-  padding: 20px;
-  border-radius: 16px;
-  border: 1px solid #333;
-}
-
-/* TARJETAS KPI */
-.kpi-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; flex-shrink: 0; }
+/* KPIs */
+.kpi-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; flex-shrink: 0; }
 .kpi-card {
-  background: var(--bg-card);
-  padding: 20px;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  border-top: 4px solid transparent;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  background: var(--bg-card); padding: 15px; border-radius: 10px;
+  border: 1px solid var(--border-color); border-top: 4px solid transparent;
+  display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 .kpi-card.green { border-top-color: var(--neon-green); }
 .kpi-card.blue { border-top-color: var(--neon-blue); }
 .kpi-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 5px; }
-.kpi-value { font-size: 1.6rem; font-weight: 800; color: #fff; }
+.kpi-value { font-size: 1.4rem; font-weight: 800; color: #fff; }
 .kpi-value.green-text { color: var(--neon-green); }
 .kpi-value.blue-text { color: var(--neon-blue); }
 
-/* 2. TARJETAS LATERALES CON COLOR */
-.card {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  transition: 0.2s;
-  text-align: center;
+/* ACCIONES (BOTONES IZQ) */
+.actions-grid { display: flex; flex-direction: column; gap: 15px; }
+.action-btn-card {
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 12px; padding: 20px; text-align: left; cursor: pointer;
+    transition: all 0.2s ease; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
+.action-btn-card:hover { transform: translateY(-3px); border-color: #666; background: #252525; }
+.action-btn-card.green { border-left: 5px solid var(--neon-green); }
+.action-btn-card.orange { border-left: 5px solid var(--neon-orange); }
+.action-btn-card.blue { border-left: 5px solid var(--neon-blue); }
+.action-content h3 { margin: 0; font-size: 1.1rem; font-weight: 800; }
+.action-content p { margin: 4px 0 0 0; font-size: 0.8rem; color: var(--text-secondary); }
+.action-icon { font-size: 1.5rem; opacity: 0.8; }
 
-/* PANELES ESPECÍFICOS */
-.form-card { border-left: 4px solid var(--neon-green); }
-.scanner-card { padding: 15px !important;border-left: 4px solid var(--neon-blue); }
-.panel-production { border-left: 4px solid var(--neon-orange); background-color: #222; }
-.panel-standard { border-left: 4px solid var(--neon-green); }
+/* INPUTS Y FORMULARIOS COMPACTOS */
+.input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; margin-top: 0; }
+.input-group label { font-weight: 600; color: var(--text-secondary); font-size: 0.8rem; }
 
-/* INPUTS Y LABELS */
-.scanner-card button {
-    padding: 8px 12px; /* Menos relleno que los botones normales */
-    font-size: 0.9rem; /* Letra un poco más chica */
-    width: 100%; /* O cambia a 'auto' si no quieres que llene todo el ancho */
-}
-.input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 5px; margin-top: 0;}
-.input-group label { font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; }
 input {
-  background-color: var(--bg-input);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 8px;
-  border-radius: 8px;
-  width: 100%;
-  outline: none;
-  font-size: 0.95rem;
-  transition: 0.2s;
+  background-color: var(--bg-input); border: 1px solid var(--border-color);
+  color: var(--text-primary); padding: 0 10px; height: 36px; border-radius: 6px;
+  width: 100%; outline: none; font-size: 0.9rem; transition: 0.2s;
 }
 input:focus { border-color: var(--neon-green); background-color: #2a2a2a; box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.15); }
 
-/* ESTILOS DE TEXTO */
-.text-orange { color: var(--neon-orange); margin: 0; }
-.text-green { color: var(--neon-green); margin: 0; }
-.text-blue { color: var(--neon-blue); margin: 0; }
+.text-orange { color: var(--neon-orange) !important; }
+.text-green { color: var(--neon-green) !important; }
+.text-blue { color: var(--neon-blue) !important; }
 
-/* =========================================================
-   FORMULARIOS COMPACTOS
-   ========================================================= */
-.compact-form { display: flex; flex-direction: column; gap: 12px; }
-
-.form-row { display: flex; gap: 10px; align-items: flex-start; }
-
-.mini-toggle-group {
-  flex: 1;
-  display: flex;
-  background: #333;
-  border-radius: 6px;
-  padding: 3px;
-  border: 1px solid var(--border-color);
+/* TOGGLES Y PESO */
+.production-toggle-group, .toggle-pricing {
+  display: flex; background: #333; border-radius: 6px; padding: 3px;
+  height: 36px; width: 100%;
 }
-.mini-toggle-group button {
-  flex: 1;
-  background: transparent;
-  color: #aaa;
-  font-size: 0.75rem;
-  padding: 6px;
-  border-radius: 4px;
-  margin: 0;
+.production-toggle-group button, .toggle-pricing button {
+  flex: 1; background: transparent; border: none; color: #aaa;
+  font-size: 0.85rem; font-weight: 600; padding: 0; cursor: pointer;
+  border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center;
 }
-.mini-toggle-group button.active {
-  background: var(--neon-orange);
-  color: #000;
-  font-weight: 800;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+.production-toggle-group button.active, .toggle-pricing button.active {
+  background: var(--neon-orange); color: #121212; font-weight: 800;
 }
 
-.weight-group { flex: 0.6; }
-.weight-group input { text-align: center; padding: 9px; }
+.weight-input-wrapper { flex: 1; position: relative; display: flex; align-items: center; }
+.weight-input-wrapper input { padding-right: 30px !important; }
+.unit-label { position: absolute; right: 10px; color: #666; font-size: 0.75rem; pointer-events: none; top: 50%; transform: translateY(-50%); }
 
-.price-col { flex: 1; display: flex; flex-direction: column; }
-.price-col input { padding: 10px; }
-.hint-orange {
-  font-size: 0.7rem;
-  color: var(--neon-orange);
-  text-align: right;
-  min-height: 16px;
-  margin-top: 2px;
-}
+/* GRIDS PRECIOS */
+.prices-compact-row, .prices-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.conversion-hint { display: block; text-align: right; font-size: 0.7rem; color: #ff9800; margin-top: 2px; height: 14px; }
 
-.stock-input-small {
-  width: 80px !important;
-  text-align: center;
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-
-.compact-btn { padding: 10px; font-size: 0.95rem; }
-.btn-orange {
-  background-color: var(--neon-orange);
-  color: #000;
-  box-shadow: 0 4px 10px rgba(255, 152, 0, 0.2);
-}
-.btn-orange:hover { background-color: #ffad33; transform: translateY(-2px); }
-
-/* 3. SELECTOR DE MODO */
+/* STOCK SELECTOR */
 .stock-mode-selector {
-  display: flex;
-  gap: 0;
-  background: #252525;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  border: 1px solid var(--border-color);
-  overflow: hidden;
+  display: flex; gap: 0; background: #252525; border-radius: 6px; margin-bottom: 10px;
+  border: 1px solid var(--border-color); overflow: hidden; height: 36px;
 }
 .mode-btn {
-  flex: 1;
-  padding: 10px;
-  background: transparent;
-  color: var(--text-secondary);
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  transition: 0.2s;
+  flex: 1; padding: 0; background: transparent; color: var(--text-secondary); border: none;
+  cursor: pointer; font-weight: 600; transition: 0.2s; font-size: 0.85rem;
   border-right: 1px solid var(--border-color);
 }
 .mode-btn:last-child { border-right: none; }
 .mode-btn.active { background: var(--neon-green); color: #000; }
 
-/* 3. INPUTS DE CAJA/UNIDAD */
-.stock-input-container { height: 50px; display: flex; align-items: center; width: 100%; }
-.stock-input-container input { height: 100%; font-size: 1rem; }
+.stock-input-container { height: 36px; display: flex; align-items: center; width: 100%; }
+.stock-input-container input { height: 100%; font-size: 1rem; text-align: center; font-weight: bold; }
+.box-inputs-row { display: flex; gap: 5px; align-items: center; height: 100%; width: 100%; }
+.box-x { color: var(--text-secondary); font-weight: bold; font-size: 0.9rem; }
 
-.box-inputs-row { display: flex; gap: 10px; align-items: center; height: 100%; width: 100%; }
-.box-inputs-row input { text-align: center; }
-.box-x { color: var(--text-secondary); font-weight: bold; }
-
-/* 6. ESCÁNER */
+/* ESCÁNER */
 .scanner-status {
-  background: rgba(41, 121, 255, 0.1);
-  color: var(--neon-blue);
-  padding: 10px;
-  border-radius: 6px;
-  text-align: center;
-  font-weight: 600;
-  margin-bottom: 10px;
-  border: 1px solid var(--neon-blue);
+  background: rgba(41, 121, 255, 0.1); color: var(--neon-blue); padding: 8px; border-radius: 6px;
+  text-align: center; font-weight: 600; margin-bottom: 10px; border: 1px solid var(--neon-blue); font-size: 0.9rem;
 }
 
-/* BOTONES GLOBALES */
-button { border: none; border-radius: 8px; padding: 12px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+/* BOTONES */
+button { border: none; border-radius: 6px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+.btn-primary, .btn-orange, .btn-secondary, .btn-danger {
+    height: 40px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; padding: 0 15px;
+}
 .btn-primary { background-color: var(--neon-green); color: #000; width: 100%; box-shadow: 0 4px 10px rgba(0, 230, 118, 0.2); }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 230, 118, 0.3); }
+.btn-orange { background-color: var(--neon-orange); color: #000; width: 100%; box-shadow: 0 4px 10px rgba(255, 152, 0, 0.2); }
+.btn-orange:hover { background-color: #ffad33; transform: translateY(-2px); }
 .btn-secondary { background-color: #333; color: #fff; border: 1px solid var(--border-color); }
 .btn-secondary:hover { background-color: #444; border-color: #666; }
-.btn-danger { background-color: var(--neon-red); color: white; width: 100%; margin-top: 10px; }
+.btn-danger { background-color: var(--neon-red); color: white; width: 100%; }
+.mt-10 { margin-top: 10px; }
+.w-100 { width: 100%; }
 
-/* =========================================================
-   TABLA / PANEL DERECHO (SCROLL PROPIO)
-   ========================================================= */
+/* TABLA */
 .table-wrapper {
-  flex-grow: 1; /* Ocupa todo el espacio disponible */
-  
-  /* ESTO ACTIVA EL SCROLLBAR EN LA TABLA */
-  overflow: auto; 
-  height: 100%;
-  
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background-color: var(--bg-card);
+  flex-grow: 1; overflow: auto; height: 100%;
+  border: 1px solid var(--border-color); border-radius: 10px; background-color: var(--bg-card);
 }
-
-/* Para que la cabecera no se mueva al bajar */
 table { width: 100%; border-collapse: collapse; white-space: nowrap; }
 th {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  text-align: left;
-  padding: 16px 20px;
-  background-color: #252525;
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  position: sticky; top: 0; z-index: 5; text-align: left; padding: 12px 20px;
+  background-color: #252525; color: var(--text-secondary);
+  font-size: 0.75rem; border-bottom: 1px solid var(--border-color);
+  text-transform: uppercase; letter-spacing: 1px;
 }
-
-td {
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  color: #eee;
-  vertical-align: middle;
-}
-
-.badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-block; min-width: 45px; text-align: center; }
+td { padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #eee; vertical-align: middle; font-size: 0.9rem; }
+.badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-block; min-width: 45px; text-align: center; }
 .badge.green { background: rgba(0, 230, 118, 0.15); color: var(--neon-green); border: 1px solid var(--neon-green); }
 .badge.yellow { background: rgba(255, 234, 0, 0.15); color: var(--neon-yellow); border: 1px solid var(--neon-yellow); }
 .badge.red { background: rgba(255, 23, 68, 0.15); color: var(--neon-red); border: 1px solid var(--neon-red); }
 
-/* CONTROLES TABLA */
+/* CONTROLES */
 .table-controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-shrink: 0; }
 .search-wrapper { flex-grow: 1; }
-.search-wrapper input { padding-left: 15px; background-color: var(--bg-main); height: 45px; }
-.filter-toggle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  background: var(--bg-card);
-  padding: 0 20px;
-  height: 45px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  font-weight: 600;
-}
-.filter-toggle input { width: 18px; height: 18px; accent-color: var(--neon-green); margin: 0; }
+.search-wrapper input { padding-left: 15px; background-color: var(--bg-main); height: 40px; }
+.filter-toggle { display: flex; align-items: center; gap: 10px; color: var(--text-secondary); cursor: pointer; background: var(--bg-card); padding: 0 20px; height: 40px; border-radius: 8px; border: 1px solid var(--border-color); font-weight: 600; font-size: 0.9rem; }
+.filter-toggle input { width: 16px; height: 16px; accent-color: var(--neon-green); margin: 0; }
+.dropdown-menu { position: absolute; top: 115%; right: 0; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); z-index: 100; overflow: hidden; min-width: 160px; }
+.dropdown-menu button { background: transparent; color: var(--text-primary); width: 100%; text-align: left; padding: 10px 20px; border-bottom: 1px solid #333; height: auto; justify-content: flex-start; }
+.dropdown-menu button:last-child { border-bottom: none; }
+.dropdown-menu button:hover { background: rgba(255,255,255,0.05); color: var(--neon-green); }
 
-/* 5. MODAL POPUP */
+/* MODALES GENERAL */
 .modal-overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(5px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-  animation: fadeIn 0.3s;
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 2000; animation: fadeIn 0.2s;
 }
 .modal-content {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  padding: 30px;
-  border-radius: 16px;
-  width: 95%;
-  max-width: 450px;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
-  text-align: center;
-  animation: slideUp 0.3s;
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  padding: 20px 25px; /* Padding optimizado */
+  border-radius: 12px; width: 95%; max-width: 400px; /* Ancho compacto */
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6); text-align: left;
+  animation: slideUp 0.2s; max-height: 90vh; overflow-y: auto;
 }
-.modal-content h2 { margin-top: 0; color: #fff; margin-bottom: 20px; }
+.modal-content h2 { margin-top: 0; color: #fff; margin-bottom: 15px; text-align: center; font-size: 1.3rem; }
 
-.modal-tabs-container { border: 3px solid #444; border-radius: 40px; margin-bottom: 10px; background: #111; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
-.modal-tabs { position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; z-index: 1; }
+.modal-scanner-wrapper {
+    min-height: 250px; background: #000; border-radius: 8px; overflow: hidden;
+    margin-bottom: 15px; display: flex; align-items: center; justify-content: center; border: 1px solid #333;
+}
+
+.modal-header-edit {
+    display: flex; justify-content: center; align-items: center; margin-bottom: 20px; height: 50px; position: relative;
+}
+
+/* Estado Normal (Texto + Icono) */
+.title-display { 
+    display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; padding: 5px 15px; border-radius: 8px;
+}
+.title-display:hover { background: rgba(255,255,255,0.05); transform: scale(1.02); }
+
+.modal-header-edit h2 { margin: 0; font-size: 1.5rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
+.edit-icon { width: 18px; height: 18px; opacity: 0.5; color: #fff; transition: 0.2s; }
+.title-display:hover .edit-icon { opacity: 1; color: var(--neon-blue); }
+
+/* INPUT EDITABLE ANIMADO (LENTO Y ELEGANTE) */
+.title-input-animated {
+    font-size: 1.2rem; text-align: center; font-weight: 700; 
+    background: #0a0a0a; color: #fff; border: 1px solid var(--neon-blue); /* Borde fino */
+    border-radius: 30px; width: 85%; height: 45px; padding: 0 20px;
+    outline: none; box-shadow: 0 4px 30px rgba(41, 121, 255, 0.1); 
+    
+    /* ANIMACIÓN ELEGANTE */
+    animation: softFloatIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    transform-origin: center bottom;
+}
+
+@keyframes softFloatIn {
+    0% { opacity: 0; transform: scale(0.96) translateY(10px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* MODAL: SEPARADORES Y STOCK */
+.compact-grid { margin-bottom: 15px; gap: 8px; }
+.compact-grid .input-group { margin-bottom: 0; }
+.modal-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0; width: 100%; }
+.stock-adjust-section { display: flex; flex-direction: column; gap: 8px; }
+.stock-info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color);
+}
+.stock-label { color: #aaa; font-size: 0.85rem; }
+.stock-value { font-size: 1.1rem; color: #fff; }
+
+.compact-tabs { margin-bottom: 5px; height: 34px; }
+.compact-tabs .tab-option { font-size: 0.8rem; }
+.modal-tabs-container { border: 3px solid #444; border-radius: 40px; margin-bottom: 10px; background: #111; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); height: 40px; }
+.modal-tabs { position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; z-index: 1; height: 100%; }
 .tab-glider { position: absolute; top: 0; left: 0; height: 100%; width: calc(100% / 3); border-radius: 30px; z-index: 1; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); }
 .tab-glider.suma { transform: translateX(0%); background: var(--neon-green); }
 .tab-glider.resta { transform: translateX(100%); background: var(--neon-red); }
 .tab-glider.set { transform: translateX(200%); background: var(--neon-blue); }
-.tab-option { position: relative; z-index: 2; background: transparent; border: none; font-weight: 600; cursor: pointer; color: #666; transition: color 0.3s; }
+.tab-option { position: relative; z-index: 2; background: transparent; border: none; font-weight: 600; cursor: pointer; color: #666; transition: color 0.3s; font-size: 0.85rem; height: 100%; display: flex; align-items: center; justify-content: center; }
 .tab-option.active { color: var(--text-primary); text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-.modal-footer { display: flex; gap: 15px; margin-top: 25px; }
 
-/* CABECERAS DESPLEGABLES */
-.card-header-interactive { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;  }
-.card-header-interactive:hover h3 { filter: brightness(1.2); }
-.card-header-static { display: flex; flex-direction: column; justify-content: center; }
-.card-subtitle { display: block; font-size: 0.8rem; color: var(--text-secondary); }
-.toggle-arrow { font-size: 0.9rem; color: var(--text-secondary); }
-.slide-down-animation { animation: fadeIn 0.3s ease-out; margin-top: -15px; }
+.total-change-text { text-align: right; font-size: 0.8rem; color: #888; margin-top: 0; }
+.modal-footer { margin-top: 15px; display: flex; gap: 10px; }
 
-/* Dropdown del Menú Exportar */
-.dropdown-menu { position: absolute; top: 115%; right: 0; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); z-index: 100; overflow: hidden; min-width: 160px; }
-.dropdown-menu button { background: transparent; color: var(--text-primary); width: 100%; text-align: left; padding: 12px 20px; border-bottom: 1px solid #333; }
-.dropdown-menu button:last-child { border-bottom: none; }
-.dropdown-menu button:hover { background: rgba(255,255,255,0.05); color: var(--neon-green); }
-
-.pricing-config-box { 
-    background: #1a1a1a; 
-    padding: 15px;          /* Espacio interno para que no se vea apretado */
-    border-radius: 8px; 
-    border: 1px solid #333; 
-    
-    /* ESTO ES LO IMPORTANTE PARA LA DISPOSICIÓN: */
-    display: flex;
-    flex-direction: column; 
-    gap: 15px;              /* Espacio entre la fila del Toggle/Peso y la fila de Precios */
-    margin-top: 5px;        /* Separa del input de Nombre */
-    margin-bottom: 15px;    /* Separa del input de Cantidad */
-}
-.config-row-top { 
-    display: flex; 
-    gap: 10px; 
-    align-items: stretch; /* Hace que el botón y el input tengan la misma altura */
-    margin-bottom: 0;     /* Quitamos márgenes extraños */
-}
-
-/* Asegura que el toggle ocupe espacio pero no todo */
-/* Modifica o verifica esto en tu CSS */
-.toggle-pricing {
-    display: flex;
-    background: #333;
-    border-radius: 6px;
-    padding: 4px;
-    height: 40px;
-    width: 100%; /* Asegura que llene la caja gris */
-}
-.toggle-pricing button {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: #aaa;
-    
-    /* CAMBIOS CLAVE AQUÍ: */
-    font-size: 1rem;      /* Letra más grande (antes 0.8rem) */
-    font-weight: 600;     /* Texto más grueso */
-    padding: 0;           /* Quitamos padding interno porque usamos height en el padre */
-    
-    cursor: pointer;
-    border-radius: 4px;
-    transition: 0.2s;
-    
-    /* Centrar texto perfectamente */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.toggle-pricing button.active { background: var(--neon-orange); color: white; font-weight: 600; }
-.weight-input-wrapper { flex: 1; position: relative; display: flex; align-items: center; }
-.weight-input-wrapper input { width: 100%; padding: 6px 25px 6px 10px; border: 1px solid #444; background: #111; color: white; border-radius: 6px; font-size: 0.9rem; }
-.unit-label { position: absolute; right: 8px; color: #666; font-size: 0.8rem; pointer-events: none; }
-.config-row-prices { 
-    display: grid; 
-    grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
-    gap: 15px; /* Separación horizontal entre Costo y Venta */
-}
-.price-input-group label { font-size: 0.75rem; color: #aaa; margin-bottom: 4px; display: block; }
-.price-input-group input { width: 100%; background: #111; border: 1px solid #444; padding: 8px; color: white; border-radius: 6px; }
-.conversion-hint { display: block; text-align: right; font-size: 0.7rem; color: #ff9800; margin-top: 2px; height: 14px; }
-.big-qty-input { font-size: 1.1rem; text-align: center; font-weight: bold; }
-.mt-10 { margin-top: 10px; }
-.w-100 { width: 100%; }
-.prices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-
-/* =========================================
-   RESPONSIVE (MÓVIL)
-   ========================================= */
+/* RESPONSIVE */
 @media (max-width: 900px) {
-  /* En móvil, volvemos al scroll normal del navegador */
   html, body, #root { overflow: auto; height: auto; }
   .app { height: auto; padding: 15px; overflow: visible; }
-
-  .grid {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 100%;
-    height: auto;
-  }
-
-  .left-column, .right-column {
-    width: 100%;
-    min-width: 0;
-    overflow: visible;
-    padding-right: 0;
-    height: auto;
-  }
-
-  .sidebar-menu { border: none; padding: 0; background: transparent; }
-
+  .grid { display: flex; flex-direction: column; gap: 15px; width: 100%; height: auto; }
+  .left-column, .right-column { width: 100%; min-width: 0; overflow: visible; padding-right: 0; height: auto; }
   .header-container { flex-direction: column; text-align: center; gap: 15px; padding: 15px; }
-  .header-content h1 { font-size: 1.4rem; }
   .header-container button { width: 100%; }
-
   .kpi-container { gap: 10px; }
-  .kpi-card { padding: 15px; }
   .kpi-value { font-size: 1.3rem; }
-
-  .table-wrapper {
-    width: 100%;
-    max-width: calc(100vw - 25px);
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-    min-height: auto;
-  }
-
-  th, td { padding: 12px 10px; font-size: 0.8rem; }
-
-  .table-controls { 
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Dos columnas iguales (50% - 50%) */
-    gap: 10px;
-    width: 100%;
-  }
-  .search-wrapper { 
-    grid-column: 1 / -1; /* Expande de la columna 1 a la última */
-    width: 100%; 
-    box-sizing: border-box;
-  }
-  .table-controls > div:last-child {
-    width: 100%;
-  }
-  .table-controls > div:last-child button {
-    width: 100%;
-  }
-
-  .modal-content { width: 90%; padding: 20px; max-height: 90vh; overflow-y: auto; }
-  .modal-tabs-container { border-radius: 25px; }
-  .tab-option { font-size: 0.85rem; padding: 8px 0; }
-
-  .box-inputs-row { gap: 5px; }
-  .box-x { margin: 0 2px; }
-
-  .form-row { flex-wrap: wrap; }
-
-
-}
-
-/* =========================================================
-   NUEVOS ESTILOS PARA ELABORACIÓN PROPIA COMPACTA
-   ========================================================= */
-
-/* 1. Grupo de Botones Toggle (Unidad/Kilo) */
-.production-toggle-group {
-    display: flex;
-    background: #333;
-    border-radius: 8px; /* Coincide con los inputs */
-    padding: 4px;
-    height: 42px; /* Altura cómoda */
-    width: 100%;
-}
-
-.production-toggle-group button {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: #aaa;
-    font-size: 1rem;
-    font-weight: 600;
-    padding: 0;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.production-toggle-group button.active {
-    background: var(--neon-orange);
-    color: #121212; /* Texto oscuro para contraste */
-    font-weight: 800;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-/* 2. Fila Compacta de Precios (Costo y Venta lado a lado) */
-.prices-compact-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
-    gap: 15px; /* Espacio central */
-}
-
-/* Asegura que el label de 'gr' no se monte sobre el número */
-.weight-input-wrapper input {
-    padding-right: 35px !important; 
+  .table-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+  .search-wrapper { grid-column: 1 / -1; width: 100%; }
+  .table-controls > div:last-child { width: 100%; }
+  .table-controls > div:last-child button { width: 100%; }
+  .table-wrapper { width: 100%; max-width: calc(100vw - 25px); overflow: auto; min-height: auto; }
+  .prices-compact-row, .prices-grid { gap: 5px; }
+  .modal-content { padding: 20px; width: 90%; }
 }

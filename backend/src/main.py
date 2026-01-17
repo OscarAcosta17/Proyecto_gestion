@@ -48,12 +48,13 @@ class ProductCreate(BaseModel):
     name: str
     stock: int
     cost_price: float
+    gain: float
     sale_price: float
 
-# --- CORRECCIÓN 3: Schema para actualizar precios ---
 class ProductUpdate(BaseModel):
     cost_price: Optional[float] = None
     sale_price: Optional[float] = None
+    gain: Optional[float] = None
     name: Optional[str] = None
 
 class ProductResponse(ProductCreate):
@@ -339,6 +340,8 @@ def update_product(product_id: int, product_update: ProductUpdate, db: Session =
         db_product.cost_price = product_update.cost_price
     if product_update.sale_price is not None:
         db_product.sale_price = product_update.sale_price
+    if product_update.gain is not None:
+        db_product.gain = product_update.gain
     if product_update.name is not None:
         db_product.name = product_update.name
 
