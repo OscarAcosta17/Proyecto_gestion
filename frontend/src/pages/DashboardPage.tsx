@@ -45,47 +45,57 @@ const DashboardPage = () => {
 
   const loadNotifications = async () => {
     try {
-        // 3. USAMOS apiCall PARA QUE EL POPUP DE SESIÓN FUNCIONE
-        // (Asumimos las rutas de tu backend, ajusta si son diferentes)
-        const [resTickets, resAnnouncements] = await Promise.all([
-            apiCall(`${API_URL}/support/tickets`), // Antes: getMyTickets()
-            apiCall(`${API_URL}/announcements`)    // Antes: getAnnouncements()
+        // CORRECCIÓN 1: La URL debe coincidir con main.py ("/my-tickets")
+        // Usamos Promise.allSettled para que si falla uno, el otro cargue igual
+        const [ticketsResult, announcementsResult] = await Promise.allSettled([
+            apiCall(`${API_URL}/my-tickets`),   // <--- CAMBIADO DE /support/tickets A /my-tickets
+            apiCall(`${API_URL}/announcements`)
         ]);
-        
-        // Verificamos si respondieron bien (si es 401, el apiCall ya disparó el modal)
-        if (!resTickets.ok || !resAnnouncements.ok) return;
 
-        const tickets = await resTickets.json();
-        const announcements = await resAnnouncements.json();
-        
-        // PROCESAMIENTO DE DATOS (IGUAL QUE ANTES)
-        const ticketNotifs = tickets
-            .filter((t: any) => t.status === 'closed' || t.admin_response)
-            .map((t: any) => ({
-                unique_id: `ticket-${t.id}`,
-                type: 'ticket',
-                title: `Ticket #${t.id} Actualizado`,
-                message: t.admin_response || 'Caso cerrado.',
-                date: t.id
+        let allNotifs: any[] = [];
+
+        // 1. Procesar Tickets (Solo si la petición fue exitosa)
+        if (ticketsResult.status === 'fulfilled' && ticketsResult.value.ok) {
+            const tickets = await ticketsResult.value.json();
+            const ticketNotifs = tickets
+                .filter((t: any) => t.status === 'closed' || t.admin_response)
+                .map((t: any) => ({
+                    unique_id: `ticket-${t.id}`,
+                    type: 'ticket',
+                    title: `Ticket #${t.id} Actualizado`,
+                    message: t.admin_response || 'Caso cerrado.',
+                    date: t.id // Usamos ID como fecha relativa simple
+                }));
+            allNotifs = [...allNotifs, ...ticketNotifs];
+        } else {
+            console.error("Error cargando tickets (Verificar endpoint /my-tickets)");
+        }
+
+        // 2. Procesar Anuncios (Solo si la petición fue exitosa)
+        if (announcementsResult.status === 'fulfilled' && announcementsResult.value.ok) {
+            const announcements = await announcementsResult.value.json();
+            const announceNotifs = announcements.map((a: any) => ({
+                unique_id: `announce-${a.id}`,
+                type: 'announcement',
+                title: `${a.title}`,
+                message: a.message,
+                date: a.id + 100000
             }));
+            allNotifs = [...allNotifs, ...announceNotifs];
+        }
 
-        const announceNotifs = announcements.map((a: any) => ({
-            unique_id: `announce-${a.id}`,
-            type: 'announcement',
-            title: `📢 ${a.title}`,
-            message: a.message,
-            date: a.id + 100000 
-        }));
-
-        const allNotifs = [...announceNotifs, ...ticketNotifs].sort((a, b) => b.date - a.date);
+        // Ordenar y guardar
+        allNotifs.sort((a, b) => b.date - a.date);
         setNotifications(allNotifs);
         
+        // Verificar no leídos
         const lastSeenId = localStorage.getItem('lastSeenNotificationId');
         if (allNotifs.length > 0 && allNotifs[0].unique_id !== lastSeenId) {
             setHasUnread(true);
         }
+
     } catch (error) {
-        console.error("Error cargando notificaciones", error);
+        console.error("Error crítico cargando notificaciones", error);
     }
   };
 
