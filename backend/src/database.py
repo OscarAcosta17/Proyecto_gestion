@@ -24,8 +24,17 @@ if not SQLALCHEMY_DATABASE_URL:
 if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Crear el motor
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+# ==============================================================================
+# 4. CREAR EL MOTOR CON OPTIMIZACIÓN (POOLING) - ¡AQUÍ ESTÁ LA SOLUCIÓN!
+# ==============================================================================
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,    # Verifica si la conexión sigue viva antes de usarla (evita errores 500)
+    pool_size=20,          # Mantiene 20 conexiones abiertas listas para usar (Login instantáneo)
+    max_overflow=30,       # Permite 30 conexiones extra si hay mucho tráfico de golpe
+    pool_recycle=1800,     # Recicla (renueva) las conexiones cada 30 min para evitar timeouts
+    pool_timeout=30        # Espera máximo 30s por una conexión libre
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
